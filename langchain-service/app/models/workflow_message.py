@@ -5,7 +5,6 @@ from enum import Enum
 from uuid import UUID
 from datetime import datetime
 class Priority(str, Enum):
-    """Priority enum matching Spring Boot exactly"""
     HIGH = "HIGH"
     NORMAL = "NORMAL"
     LOW = "LOW"
@@ -14,7 +13,6 @@ class Priority(str, Enum):
 
 
 class NodeExecutionMessage(BaseModel):
-    """Exact match to Spring Boot NodeExecutionMessage"""
     executionId: UUID = Field(alias="execution_id")
     workflowId: UUID = Field(alias="workflow_id")
     nodeId: str = Field(alias="node_id")
