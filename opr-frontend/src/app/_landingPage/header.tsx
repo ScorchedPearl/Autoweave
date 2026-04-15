@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
 import { useUser } from "@/provider/userprovider";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const {currentUser} = useUser();
@@ -17,7 +19,7 @@ const Header = () => {
     { name: "Creators", href: "#creators" },
   ];
   return (
-    <header className=" select-none fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/10">
+    <header className=" select-none fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2"> 
@@ -31,7 +33,7 @@ const Header = () => {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-white/70 hover:text-white transition-colors duration-200 text-sm font-medium"
+                className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium"
                 onClick={e => {
     e.preventDefault();
     const el = document.getElementById(item.href.replace('#', ''));
@@ -46,10 +48,11 @@ const Header = () => {
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
             {currentUser?
                     <Link
                       href="/flow"
-                      className="text-white/70 hover:text-white transition-colors duration-200 text-sm font-medium px-4 py-2 rounded-sm bg-zinc-900"
+                      className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium px-4 py-2 rounded-sm bg-secondary"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Dashboard
@@ -59,7 +62,7 @@ href="/auth">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-white text-black hover:bg-white/90 font-medium px-4 py-2 rounded-sm transition-all duration-200 hover:scale-105"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-4 py-2 rounded-sm transition-all duration-200 hover:scale-105"
            
                   >
                     Sign in
@@ -69,22 +72,25 @@ href="/auth">
 }
           </div>
 
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 text-white/70 hover:text-white transition-colors"
-          >
-            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center md:hidden gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
         {isMenuOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-black/90 backdrop-blur-xl border-t border-white/10">
+            <div className="px-2 pt-2 pb-3 space-y-1 bg-background/90 backdrop-blur-xl border-t border-border">
   {navItems.map((item) => (
     <a
       key={item.name}
       href={item.href}
-      className="block px-3 py-2 text-white/70 hover:text-white transition-colors duration-200 text-sm font-medium"
+      className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium"
       onClick={e => {
         e.preventDefault();
         const el = document.getElementById(item.href.replace('#', ''));
@@ -97,12 +103,12 @@ href="/auth">
       {item.name}
     </a>
   ))}
-              <div className="pt-4 border-t border-white/10 mt-4">
+              <div className="pt-4 border-t border-border mt-4">
                 <div className="flex flex-col gap-2">
                   {currentUser?
                     <Link
                       href="/flow"
-                      className="text-white/70 hover:text-white transition-colors duration-200 text-sm font-medium px-4 py-2 rounded-sm bg-zinc-900"
+                      className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium px-4 py-2 rounded-sm bg-secondary"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Dashboard
@@ -111,7 +117,7 @@ href="/auth">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="bg-white text-black hover:bg-white/90 font-medium px-4 py-2 rounded-sm transition-all duration-200 hover:scale-105"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-4 py-2 rounded-sm transition-all duration-200 hover:scale-105"
                     onClick={()=>redirect('/auth')}
                   >
                     Sign in

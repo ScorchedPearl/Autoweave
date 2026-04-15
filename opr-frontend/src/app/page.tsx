@@ -11,7 +11,7 @@ import { UserProvider } from "@/provider/userprovider";
 export default function Home() {
   return (
     <UserProvider>
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-background">
         <Header />
         <Hero />
         <WorkflowDemo />

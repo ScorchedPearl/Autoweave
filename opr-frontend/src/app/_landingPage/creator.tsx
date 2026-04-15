@@ -60,38 +60,40 @@ export default function Creator() {
   };
 
   return (
-    <section  className="py-32 bg-gradient-to-b from-[#060810] to-black select-none">
+    <section  className="py-32 bg-gradient-to-b from-secondary/20 to-background select-none">
       <div className=" mx-auto  text-center">
-        <div className="bg-black rounded-3xl py-12 md:py-16 relative overflow-hidden">
+        <div className="bg-card border border-border rounded-3xl py-12 md:py-16 relative overflow-hidden">
   
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:2rem_2rem]" />
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(128,128,128,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(128,128,128,0.1)_1px,transparent_1px)] bg-[size:2rem_2rem]" />
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
           
-      <div id="creators" className="grid grid-rows-[auto,1fr] md:grid-rows-10 mx-4 md:mx-10 lg:mx-40">
+      <div id="creators" className="relative z-10 grid grid-rows-[auto,1fr] md:grid-rows-10 mx-4 md:mx-10 lg:mx-40">
         <div className="row-span-3 w-full">
           <div className="flex flex-col md:flex-row justify-between w-full py-4">
-            <div className="text-white pt-2 md:pt-5">
+            <div className="text-foreground pt-2 md:pt-5">
               <div className="text-3xl sm:text-5xl font-bold py-2 sm:py-4">
                 MarcelPearl Creators
               </div>
-              <div className="text-gray-300 text-sm sm:text-base">
+              <div className="text-muted-foreground text-sm sm:text-base">
                 Our skills made this project come to live
               </div>
             </div>
-            <div className="flex gap-2 sm:gap-3 text-4xl sm:text-6xl py-4 sm:py-8 items-center">
-              <div
-                className="rounded-full p-2 bg-[#17171d] h-8 w-8 md:h-10 md:w-10"
+            <div className="flex gap-2 sm:gap-3 text-4xl sm:text-6xl py-4 sm:py-8 items-center z-20 relative">
+              <button
+                className="rounded-full p-2 bg-secondary h-8 w-8 md:h-10 md:w-10 cursor-pointer hover:bg-secondary/80 border border-border transition-colors flex items-center justify-center"
                 onClick={handlePrev}
+                aria-label="Previous Creator"
               >
-                <ArrowLeft className="text-white" />
-              </div>
-              <div
-                className="rounded-full bg-[#17171d] h-8 w-8 md:h-10 md:w-10 p-2"
+                <ArrowLeft className="text-foreground w-5 h-5 md:w-6 md:h-6" />
+              </button>
+              <button
+                className="rounded-full bg-secondary h-8 w-8 md:h-10 md:w-10 p-2 cursor-pointer hover:bg-secondary/80 border border-border transition-colors flex items-center justify-center"
                 onClick={handleNext}
+                aria-label="Next Creator"
               >
-                <ArrowRight className="text-white" />
-              </div>
+                <ArrowRight className="text-foreground w-5 h-5 md:w-6 md:h-6" />
+              </button>
             </div>
           </div>
         </div>
@@ -116,21 +118,21 @@ export default function Creator() {
                   alt="Creator"
                 />
               </div>
-              <div className="w-full md:w-2/3 p-4 md:p-8 text-white relative z-10">
+              <div className="w-full md:w-2/3 p-4 md:p-8 text-foreground relative z-10">
                 <h1 className="text-5xl font-bold mb-1">
                   {creator[index].name}
                 </h1>
-                <h2 className="text-xl text-gray-300 mb-8 w-full">
+                <h2 className="text-xl text-muted-foreground mb-8 w-full">
                   Full Stack Developer
                 </h2>
-                <p className="text-lg mb-8">{creator[index].about}</p>
+                <p className="text-lg text-muted-foreground mb-8">{creator[index].about}</p>
                 <div className="mb-6">
                   <h3 className="font-semibold text-xl mb-4">Tech Stack</h3>
                   <div className="flex flex-wrap gap-3">
                     {creator[index].techUsed.map((tech, idx) => (
                       <div
                         key={idx}
-                        className="bg-[#1A1F2C] px-4 py-2 rounded-full flex items-center gap-2"
+                        className="bg-secondary text-secondary-foreground border border-border px-4 py-2 rounded-full flex items-center gap-2"
                       >
                         <tech.icon className="w-5 h-5 text-cyan-500" />
                         <span>{tech.name}</span>
@@ -143,7 +145,7 @@ export default function Creator() {
                     href={creator[index].github}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-[#1A1F2C] p-3 rounded-full hover:bg-[#9b87f5]/20 transition-colors"
+                    className="bg-secondary border border-border p-3 rounded-full hover:bg-secondary/80 transition-colors"
                   >
                     <Github className="w-5 h-5" />
                   </a>
@@ -151,13 +153,13 @@ export default function Creator() {
                     href={creator[index].linkdin}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-[#1A1F2C] p-3 rounded-full hover:bg-[#9b87f5]/20 transition-colors"
+                    className="bg-secondary border border-border p-3 rounded-full hover:bg-secondary/80 transition-colors"
                   >
                     <Linkedin className="w-5 h-5" />
                   </a>
                   <a
                     href={`mailto:${creator[index].email}`}
-                    className="bg-[#1A1F2C] p-3 rounded-full hover:bg-[#9b87f5]/20 transition-colors"
+                    className="bg-secondary border border-border p-3 rounded-full hover:bg-secondary/80 transition-colors"
                   >
                     <Mail className="w-5 h-5" />
                   </a>
