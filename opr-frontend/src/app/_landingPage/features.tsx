@@ -16,13 +16,11 @@ const FeatureCard = ({ feature, index }: { feature: typeof featuresData[0]; inde
       transition={{ duration: 0.5, delay: feature.delay }}
       className="group relative bg-card border border-border rounded-2xl p-6 hover:bg-secondary hover:border-foreground/20 transition-all duration-400 overflow-hidden cursor-default"
     >
-      {/* Hover glow */}
       <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-400 rounded-2xl pointer-events-none"
         style={{ background: `radial-gradient(circle at 30% 30%, ${feature.color}10, transparent 60%)` }}
       />
 
-      {/* Icon */}
       <div
         className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110"
         style={{ backgroundColor: `${feature.color}15`, border: `1px solid ${feature.color}25` }}
@@ -33,7 +31,6 @@ const FeatureCard = ({ feature, index }: { feature: typeof featuresData[0]; inde
       <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
       <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
 
-      {/* Bottom accent line */}
       <div
         className="absolute bottom-0 left-0 right-0 h-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-400"
         style={{ background: `linear-gradient(to right, transparent, ${feature.color}60, transparent)` }}
@@ -75,7 +72,6 @@ const Features = () => {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(128,128,128,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(128,128,128,0.1)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
         <div ref={titleRef} className="text-center mb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -109,14 +105,12 @@ const Features = () => {
           </motion.p>
         </div>
 
-        {/* Feature grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-20">
           {featuresData.map((feature, i) => (
             <FeatureCard key={i} feature={feature} index={i} />
           ))}
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statsData.map((stat, i) => (
             <StatCard key={i} stat={stat} index={i} />

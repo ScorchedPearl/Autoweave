@@ -5,11 +5,9 @@ import { Tag } from "@/components/ui/tag-input";
 
 export function useRunWorkflow() {
    console.log("first");
-  const login = useGoogleAccessTokenLogin(); // safe usage of hook
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const login = useGoogleAccessTokenLogin(); 
   return async (workflowId: string, payload: any,tags:Tag[]) => {
     const googleToken = getGoogleToken();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
     const needsGoogleLogin = Object.values(payload.nodes || {}).some((node: any) => {
       const url: string = node?.data?.url || "";
       const useGoogle = node?.data?.useGoogleAuth === true;

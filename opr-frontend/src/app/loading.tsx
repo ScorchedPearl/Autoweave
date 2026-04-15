@@ -19,7 +19,6 @@ const Node = ({ x, y, delay }: { x: number; y: number; delay: number }) => (
       }}
       transition={{ duration: 2, repeat: Infinity, delay: delay + 0.5 }}
     />
-    {/* Inner lines to look like configuration data */}
     <rect x={x + 8} y={y + 10} width="24" height="3" rx="1.5" fill="rgba(255,255,255,0.2)" />
     <rect x={x + 8} y={y + 19} width="16" height="3" rx="1.5" fill="rgba(255,255,255,0.2)" />
   </motion.g>
@@ -28,22 +27,20 @@ const Node = ({ x, y, delay }: { x: number; y: number; delay: number }) => (
 const Loader = () => {
   return (
     <div className="flex flex-col justify-center items-center h-screen bg-black overflow-hidden relative">
-      {/* Background patterns */}
+    
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-30" />
       
-      {/* Glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="w-[30rem] h-[30rem] bg-cyan-500/10 rounded-full blur-[100px] animate-pulse" />
       </div>
 
       <div className="relative w-72 h-48 flex items-center justify-center z-10">
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 288 192">
-          {/* Base inactive pathways */}
+          
           <path d="M 64 56 C 86 56, 92 96, 124 96" stroke="rgba(255,255,255,0.05)" strokeWidth="2" fill="none" strokeLinecap="round" />
           <path d="M 64 136 C 86 136, 92 96, 124 96" stroke="rgba(255,255,255,0.05)" strokeWidth="2" fill="none" strokeLinecap="round" />
           <path d="M 164 96 L 224 96" stroke="rgba(255,255,255,0.05)" strokeWidth="2" fill="none" strokeLinecap="round" />
 
-          {/* Animated data flow lines */}
           <motion.path 
             d="M 64 56 C 86 56, 92 96, 124 96" 
             stroke="#06b6d4" 
@@ -75,22 +72,17 @@ const Loader = () => {
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", times: [0, 0.5, 0.8], delay: 1 }}
           />
 
-          {/* Nodes */}
-          {/* Input Node 1 */}
           <Node x={24} y={40} delay={0} />
           <motion.circle cx="64" cy="56" r="3" fill="#06b6d4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
 
-          {/* Input Node 2 */}
           <Node x={24} y={120} delay={0.2} />
           <motion.circle cx="64" cy="136" r="3" fill="#06b6d4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} />
 
-          {/* Processing Node (Middle) */}
           <Node x={124} y={80} delay={0.4} />
           <motion.circle cx="124" cy="96" r="3" fill="#1d4ed8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} />
           <motion.circle cx="164" cy="96" r="3" fill="#06b6d4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} />
           
           <motion.g transform="translate(124, 80)">
-             {/* Center processing spinner inside the node */}
              <motion.circle 
                cx="20" cy="16" r="6" 
                fill="none" stroke="#fff" strokeWidth="1.5" strokeDasharray="10 20"
@@ -99,13 +91,11 @@ const Loader = () => {
              />
           </motion.g>
 
-          {/* Output Node */}
           <Node x={224} y={80} delay={0.6} />
           <motion.circle cx="224" cy="96" r="3" fill="#1d4ed8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }} />
         </svg>
       </div>
 
-      {/* Loading Text */}
       <motion.div 
         className="mt-8 flex items-center gap-3 z-10"
         initial={{ opacity: 0, y: 10 }}

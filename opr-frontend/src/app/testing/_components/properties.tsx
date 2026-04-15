@@ -25,7 +25,6 @@ interface UpstreamVarGroup {
   vars: NodeOutputVar[];
 }
 
-/* ── dot-key helpers (condition node uses nested config) ──────── */
 function expandDotKeys(flat: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(flat)) {
@@ -33,7 +32,6 @@ function expandDotKeys(flat: Record<string, unknown>): Record<string, unknown> {
     if (parts.length === 1) {
       result[key] = value;
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let cursor = result as any;
       for (let i = 0; i < parts.length - 1; i++) {
         if (typeof cursor[parts[i]] !== "object" || cursor[parts[i]] === null) cursor[parts[i]] = {};
@@ -68,7 +66,6 @@ function flattenDotKeys(
   return result;
 }
 
-/* ── helpers ─────────────────────────────────────────────────── */
 
 type IconComp = React.ElementType;
 function getNodeIcon(nodeType: string): IconComp {
@@ -116,7 +113,6 @@ function getNodeStyle(nodeType: string) {
   return { color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.3)", badge: "Action" };
 }
 
-/* ── Atomic input components ─────────────────────────────────── */
 
 const baseInput = "w-full bg-[#0b0d12] border border-white/[0.1] rounded-lg px-3 py-2 text-[13px] text-white placeholder-white/25 focus:outline-none transition-all duration-150";
 const focusColor = (color: string) => `focus:border-[${color}] focus:ring-1 focus:ring-[${color}]/30`;
@@ -156,7 +152,6 @@ function FieldLabel({ schema, nodeColor }: { schema: FieldSchema; nodeColor: str
   );
 }
 
-/* ── Tags input ─────────────────────────────────────────────────  */
 function TagsInput({
   value,
   onChange,
@@ -217,7 +212,6 @@ function TagsInput({
   );
 }
 
-/* ── Mapping (key-value) input ───────────────────────────────── */
 function MappingInput({
   value,
   onChange,
@@ -282,7 +276,6 @@ function MappingInput({
   );
 }
 
-/* ── Slider input ────────────────────────────────────────────── */
 function SliderInput({
   value,
   onChange,
@@ -322,7 +315,6 @@ function SliderInput({
   );
 }
 
-/* ── Toggle input ────────────────────────────────────────────── */
 function ToggleInput({
   value,
   onChange,
@@ -356,7 +348,6 @@ function ToggleInput({
   );
 }
 
-/* ── Variable Picker ─────────────────────────────────────────── */
 function VariablePicker({
   upstreamVars,
   onInsert,
@@ -451,20 +442,15 @@ function VariablePicker({
   );
 }
 
-/* ── Single field renderer ───────────────────────────────────── */
 function FieldRenderer({
   schema,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange,
   nodeColor,
   upstreamVars = [],
 }: {
   schema: FieldSchema;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange: (v: any) => void;
   nodeColor: string;
   upstreamVars?: UpstreamVarGroup[];
@@ -475,9 +461,7 @@ function FieldRenderer({
 
   const sharedInputClass = `${baseInput} focus:border-[${nodeColor}] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)]`;
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const inputRef = useRef<HTMLInputElement>(null);
 
   const insertAtCursor = (key: string, isTextarea: boolean) => {
@@ -638,7 +622,6 @@ function FieldRenderer({
   }
 }
 
-/* ── Section wrapper ─────────────────────────────────────────── */
 function Section({
   title,
   count,
@@ -685,7 +668,6 @@ function Section({
   );
 }
 
-/* ── Main panel ──────────────────────────────────────────────── */
 export const PropertiesPanel: React.FC = () => {
   const {
     selectedNode,
@@ -718,14 +700,12 @@ export const PropertiesPanel: React.FC = () => {
     });
   }, [selectedNode, edges, enhancedNodes]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [localConfig, setLocalConfig] = useState<Record<string, any>>({});
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [optionalOpen, setOptionalOpen] = useState(false);
   const [outputsOpen, setOutputsOpen] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
-  /* Sync when selection changes */
   useEffect(() => {
     if (selectedNode) {
       const schema = NODE_INPUT_REGISTRY[selectedNode.data.nodeType];
@@ -747,7 +727,6 @@ export const PropertiesPanel: React.FC = () => {
     }
   }, [selectedNode, selectedNodeId]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = useCallback((key: string, value: any) => {
     setLocalConfig((prev) => ({ ...prev, [key]: value }));
     setHasUnsaved(true);
@@ -767,7 +746,6 @@ export const PropertiesPanel: React.FC = () => {
     }
   };
 
-  /* ── Empty state ─────────────────────────────────────────────── */
   if (!selectedNode) {
     return (
       <div className="w-80 bg-[#080a0f]/40 backdrop-blur-2xl border border-white/[0.1] rounded-2xl h-full flex flex-col shadow-2xl">
@@ -795,7 +773,6 @@ export const PropertiesPanel: React.FC = () => {
     );
   }
 
-  /* ── Collapsed state ─────────────────────────────────────────── */
   if (isPropertiesCollapsed) {
     const style = getNodeStyle(selectedNode.data.nodeType);
     return (
@@ -819,7 +796,6 @@ export const PropertiesPanel: React.FC = () => {
     );
   }
 
-  /* ── Full panel ──────────────────────────────────────────────── */
   const nodeType = selectedNode.data.nodeType;
   const style = getNodeStyle(nodeType);
   const NodeIcon = getNodeIcon(nodeType);
@@ -831,7 +807,6 @@ export const PropertiesPanel: React.FC = () => {
   return (
     <div className="w-80 bg-[#080a0f]/40 backdrop-blur-2xl border border-white/[0.1] rounded-2xl h-full flex flex-col overflow-hidden shadow-2xl">
 
-      {/* ── Header ─────────────────────────────────────────────── */}
       <div
         className="px-4 py-3.5 border-b border-white/[0.07]"
         style={{ background: `linear-gradient(180deg, ${style.bg} 0%, transparent 100%)` }}
@@ -874,14 +849,12 @@ export const PropertiesPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Node description from registry */}
         {schema?.description && (
           <p className="mt-2.5 text-[11px] text-white/38 leading-relaxed">
             {schema.description}
           </p>
         )}
 
-        {/* Google auth warning */}
         {schema?.requiresGoogle && (
           <div
             className="mt-2.5 flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-lg"
@@ -893,7 +866,6 @@ export const PropertiesPanel: React.FC = () => {
         )}
       </div>
 
-      {/* ── Node label + description edit ─────────────────────── */}
       <div className="px-4 py-3 border-b border-white/[0.07] space-y-3">
         <div>
           <label className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-1.5 block">
@@ -924,10 +896,8 @@ export const PropertiesPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Configuration fields ───────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
         {!schema ? (
-          /* Fallback generic editor for nodes without a registry entry */
           <GenericConfigEditor
             config={localConfig}
             onChange={(key, val) => handleChange(key, val)}
@@ -945,7 +915,6 @@ export const PropertiesPanel: React.FC = () => {
           />
         ) : (
           <>
-            {/* Required fields */}
             {requiredFields.length > 0 && (
               <Section title="Required" count={requiredFields.length} color={style.color}>
                 {requiredFields.map((field) => (
@@ -964,7 +933,6 @@ export const PropertiesPanel: React.FC = () => {
               </Section>
             )}
 
-            {/* Optional fields */}
             {optionalFields.length > 0 && (
               <div>
                 <button
@@ -1005,7 +973,6 @@ export const PropertiesPanel: React.FC = () => {
               </div>
             )}
 
-            {/* Template variable hint */}
             {schema.fields.some((f) => f.supportsTemplate) && (
               <div className="mt-3 p-3 rounded-xl bg-violet-500/[0.07] border border-violet-500/[0.15]">
                 <div className="flex items-center gap-1.5 mb-1">
@@ -1025,7 +992,6 @@ export const PropertiesPanel: React.FC = () => {
           </>
         )}
 
-        {/* ── Output / Return Variables ─────────────────────── */}
         {NODE_OUTPUT_REGISTRY[nodeType] && (
           <div className="mt-3">
             <button
@@ -1091,7 +1057,6 @@ export const PropertiesPanel: React.FC = () => {
         )}
       </div>
 
-      {/* ── Footer — Save / Reset ──────────────────────────────── */}
       <div className="px-4 py-3 border-t border-white/[0.07] space-y-2.5">
         <div className="flex gap-2">
           <button
@@ -1136,7 +1101,6 @@ export const PropertiesPanel: React.FC = () => {
   );
 };
 
-/* ── Generic config editor (fallback) ────────────────────────── */
 function GenericConfigEditor({
   config,
   onChange,
@@ -1209,7 +1173,6 @@ function GenericConfigEditor({
             {typeof value === "string" && (value as string).includes("{{") && (
               <p className="mt-1 text-[10px] text-violet-400/60">Contains template variables</p>
             )}
-            {/* Error display placeholder */}
             {key === "__error" && (
               <div className="flex items-center gap-1 mt-1 text-red-400 text-[11px]">
                 <AlertCircle className="w-3 h-3" />

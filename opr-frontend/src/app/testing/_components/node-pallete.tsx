@@ -35,7 +35,6 @@ const NodePalettePanel: React.FC<Props> = ({
 
   const [search, setSearch] = useState("");
 
-  // 🔥 Drag start
   const handleMouseDown = (e: React.MouseEvent) => {
     isDragging.current = true;
     offset.current = {
@@ -44,7 +43,6 @@ const NodePalettePanel: React.FC<Props> = ({
     };
   };
 
-  // 🔥 Drag move
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging.current) return;
 
@@ -54,7 +52,6 @@ const NodePalettePanel: React.FC<Props> = ({
     });
   };
 
-  // 🔥 Drag end
   const handleMouseUp = () => {
     isDragging.current = false;
   };
@@ -86,7 +83,6 @@ const NodePalettePanel: React.FC<Props> = ({
       }}
       className="w-[440px] max-h-[calc(100vh-5rem)] flex flex-col z-50"
     >
-      {/* 🔷 Header (DRAG HANDLE) */}
       <div
         onMouseDown={handleMouseDown}
         className="p-4 border-b cursor-move flex items-center justify-between"
@@ -112,7 +108,6 @@ const NodePalettePanel: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* 🔷 Body */}
       <div
         className="flex flex-col"
         style={{
@@ -124,7 +119,6 @@ const NodePalettePanel: React.FC<Props> = ({
           backdropFilter: "blur(24px)",
         }}
       >
-        {/* Search */}
         <div className="p-3 border-b border-white/10">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
@@ -138,7 +132,6 @@ const NodePalettePanel: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Nodes */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {displayedTemplates.length === 0 ? (
             <p className="text-white/30 text-sm text-center py-6">

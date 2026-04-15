@@ -110,7 +110,7 @@ function ReturnVarPill({ varKey, label, type, nodeStyle }: {
         boxShadow: flashing ? `0 0 8px ${nodeStyle.color}55` : "none",
       }}
     >
-      {/* Type badge */}
+     
       <span
         className="text-[8px] font-bold px-1 py-px rounded-sm flex-shrink-0"
         style={{ backgroundColor: `${typeColor}20`, color: typeColor }}
@@ -118,7 +118,7 @@ function ReturnVarPill({ varKey, label, type, nodeStyle }: {
         {type}
       </span>
 
-      {/* Label */}
+     
       <span
         className="text-[10px] font-mono leading-none"
         style={{ color: isAdded ? nodeStyle.color : "rgba(255,255,255,0.55)" }}
@@ -126,12 +126,12 @@ function ReturnVarPill({ varKey, label, type, nodeStyle }: {
         {`{{${varKey}}}`}
       </span>
 
-      {/* Added indicator */}
+      
       {isAdded && (
         <Check className="w-2.5 h-2.5 flex-shrink-0" style={{ color: nodeStyle.color }} />
       )}
 
-      {/* Hover label */}
+      
       <span
         className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] whitespace-nowrap px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
         style={{ background: "rgba(0,0,0,0.85)", color: "rgba(255,255,255,0.8)" }}
@@ -159,7 +159,6 @@ export default function WorkflowNode({
   const NodeIcon = getNodeIcon(data.nodeType);
   const returnVars = NODE_OUTPUT_REGISTRY[data.nodeType] ?? [];
 
-  /* ── COLLAPSED ── */
   if (!isExpanded) {
     return (
       <div
@@ -178,7 +177,6 @@ export default function WorkflowNode({
         }}
         onClick={() => setIsExpanded(true)}
       >
-        {/* Input handles */}
         {(data.inputs ?? []).map((input, index) => (
           <Handle
             key={`in-${index}`}
@@ -197,7 +195,6 @@ export default function WorkflowNode({
           />
         ))}
 
-        {/* Icon */}
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: style.bg, border: `1px solid ${style.border}` }}
@@ -205,7 +202,6 @@ export default function WorkflowNode({
           <NodeIcon className="w-[15px] h-[15px]" style={{ color: style.color }} />
         </div>
 
-        {/* Label + badge */}
         <div className="flex-1 min-w-0">
           <div className="text-[12px] font-semibold text-white/88 leading-none mb-1 truncate">
             {data.label}
@@ -218,12 +214,10 @@ export default function WorkflowNode({
           </span>
         </div>
 
-        {/* Expand hint */}
         <ChevronDown
           className="w-3 h-3 text-white/20 group-hover:text-white/50 transition-colors flex-shrink-0"
         />
 
-        {/* Output handles */}
         {(data.outputs ?? []).map((output, index) => (
           <Handle
             key={`out-${index}`}
@@ -245,7 +239,6 @@ export default function WorkflowNode({
     );
   }
 
-  /* ── EXPANDED ── */
   return (
     <div
       className={`
@@ -261,7 +254,6 @@ export default function WorkflowNode({
           : "0 4px 24px rgba(0,0,0,0.55)",
       }}
     >
-      {/* Input handles */}
       {(data.inputs ?? []).map((input, index) => (
         <Handle
           key={`in-${index}`}
@@ -280,7 +272,6 @@ export default function WorkflowNode({
         />
       ))}
 
-      {/* Header */}
       <div
         className="px-3 py-2.5 flex items-center gap-2.5"
         style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}
@@ -335,11 +326,9 @@ export default function WorkflowNode({
         </div>
       </div>
 
-      {/* Body */}
       <div className="px-3 py-2.5 space-y-2.5">
         <p className="text-[11px] text-white/40 leading-relaxed">{data.description}</p>
 
-        {/* Port labels */}
         {data.inputs && data.inputs.length > 0 && (
           <div>
             <p className="text-[9px] font-semibold text-white/22 uppercase tracking-widest mb-1">Inputs</p>
@@ -377,7 +366,6 @@ export default function WorkflowNode({
           </div>
         )}
 
-        {/* ── Return Variables Section ── */}
         {returnVars.length > 0 && (
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }} className="pt-2">
             <button
@@ -430,7 +418,6 @@ export default function WorkflowNode({
           </div>
         )}
 
-        {/* Config */}
         {showConfig && data.config && (
           <div className="pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
             <div className="flex items-center gap-1 mb-1.5">
@@ -444,7 +431,6 @@ export default function WorkflowNode({
         )}
       </div>
 
-      {/* Output handles */}
       {(data.outputs ?? []).map((output, index) => (
         <Handle
           key={`out-${index}`}

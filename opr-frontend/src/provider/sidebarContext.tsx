@@ -15,7 +15,7 @@ type NavItem = {
 }
 
 type User = {
-  name: string
+  name: string 
   email: string
   avatar: string
 }

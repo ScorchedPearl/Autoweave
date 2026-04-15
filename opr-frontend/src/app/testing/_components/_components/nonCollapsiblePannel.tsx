@@ -112,7 +112,6 @@ export default function NodePalettePanel({
       }}
       className="w-[380px] flex flex-col z-50"
     >
-      {/* HEADER */}
       <div
         onMouseDown={handleMouseDown}
         className="p-4 border-b cursor-move"
@@ -146,7 +145,6 @@ export default function NodePalettePanel({
           </button>
         </div>
 
-        {/* SEARCH */}
         <div className="relative mb-3">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
           <input
@@ -158,7 +156,6 @@ export default function NodePalettePanel({
           />
         </div>
 
-        {/* 🔥 CATEGORY PILLS BACK */}
         <div className="flex flex-wrap gap-1.5">
           {(categories ?? []).map((category) => {
             const catColor = categoryColors[category] ?? "#94a3b8";
@@ -184,7 +181,7 @@ export default function NodePalettePanel({
         </div>
       </div>
 
-      {/* BODY */}
+       
       <div
         className="flex flex-col flex-1 overflow-hidden"
         style={{
@@ -195,7 +192,7 @@ export default function NodePalettePanel({
           borderBottomRightRadius: "1.25rem",
         }}
       >
-        {/* 🔥 SCROLL AREA */}
+         
         <div className="flex-1 overflow-y-auto p-3 bg-[#080a0f]">
           <div className="mb-2 text-[10px] text-white/30">
             {displayedTemplates.length} nodes
@@ -219,7 +216,6 @@ export default function NodePalettePanel({
           </div>
         </div>
 
-        {/* FOOTER */}
         <div className="px-4 py-3 border-t border-white/10 text-xs text-white/40">
           {draggedItem
             ? `Dragging: ${draggedItem.label}`

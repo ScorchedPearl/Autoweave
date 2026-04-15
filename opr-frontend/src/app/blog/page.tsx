@@ -126,8 +126,7 @@ export default function BlogPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       setTestimonialIndex((prev) => (prev + 1) % testimonials.length);
-    }, 8000); // Increased interval for longer reading time
-
+    }, 8000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -288,7 +287,6 @@ export default function BlogPage() {
           />
         </motion.div>
 
-        {/* ... Form Section Remains Consistent ... */}
         <motion.div
           ref={formRef}
           initial={{ opacity: 0, y: 20 }}

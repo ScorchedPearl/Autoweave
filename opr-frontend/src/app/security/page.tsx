@@ -95,11 +95,10 @@ export default function SecurityPage() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-background to-secondary/20 py-28">
       <Header />
-      {/* Background Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(128,128,128,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(128,128,128,0.1)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
 
       <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 sm:px-6 lg:px-8">
-        {/* Hero Section */}
+
         <div className="text-center">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -127,7 +126,6 @@ export default function SecurityPage() {
           </motion.p>
         </div>
 
-        {/* Security Pillars Grid */}
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {securityPillars.map((pillar) => (
             <article
@@ -161,7 +159,6 @@ export default function SecurityPage() {
           ))}
         </div>
 
-        {/* Infrastructure Resilience Section */}
         <section className="grid gap-12 md:grid-cols-2 items-center rounded-3xl border border-border bg-card/40 p-8 md:p-12">
           <div>
             <h2 className="text-3xl font-semibold text-foreground">Infrastructure Resilience</h2>
@@ -185,8 +182,6 @@ export default function SecurityPage() {
             ))}
           </div>
         </section>
-
-        {/* Core Controls Section */}
         <section className="group relative overflow-hidden rounded-3xl border border-border bg-card/80 p-8 backdrop-blur-sm transition-all duration-400 hover:border-foreground/20 hover:bg-secondary/70 md:p-10">
           <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-400 group-hover:opacity-100" style={{ background: "radial-gradient(circle at 30% 30%, rgba(6,182,212,0.10), transparent 62%)" }} />
           <h2 className="relative text-2xl font-semibold text-foreground md:text-3xl text-center">Core security controls</h2>
@@ -202,7 +197,6 @@ export default function SecurityPage() {
           <div className="absolute bottom-0 left-0 right-0 h-[1px] opacity-0 transition-opacity duration-400 group-hover:opacity-100" style={{ background: "linear-gradient(to right, transparent, rgba(6,182,212,0.55), transparent)" }} />
         </section>
 
-        {/* Privacy & Compliance Section */}
         <section className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card to-secondary/30 p-8 md:p-12 text-center md:text-left">
           <div className="max-w-4xl">
             <h2 className="text-3xl font-semibold text-foreground">Privacy & Compliance</h2>
@@ -230,7 +224,6 @@ export default function SecurityPage() {
           </div>
         </section>
 
-        {/* Technical FAQ Section */}
         <section className="space-y-10 pb-10">
           <h2 className="text-center text-2xl font-semibold text-foreground md:text-3xl">Security FAQ</h2>
           <div className="mx-auto max-w-4xl space-y-4">
@@ -243,7 +236,6 @@ export default function SecurityPage() {
           </div>
         </section>
 
-        {/* Final CTA/Statement */}
         <section className="rounded-3xl border border-border bg-card p-10 text-center">
           <h2 className="text-2xl font-semibold text-foreground md:text-3xl">Security-first by design</h2>
           <p className="mx-auto mt-4 max-w-3xl text-muted-foreground">
