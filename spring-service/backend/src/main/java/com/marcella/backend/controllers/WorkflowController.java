@@ -3,6 +3,7 @@ package com.marcella.backend.controllers;
 import com.marcella.backend.entities.Execution;
 import com.marcella.backend.entities.Users;
 import com.marcella.backend.repositories.ExecutionRepository;
+import com.marcella.backend.repositories.UserRepository;
 import com.marcella.backend.responses.PageResponse;
 import com.marcella.backend.services.*;
 import com.marcella.backend.workflow.CreateWorkflowRequest;
@@ -40,6 +41,29 @@ public class WorkflowController {
     private final ExecutionRepository executionRepository;
     private final ReturnHandlerService returnHandler;
     private final ExecutionContextService executionContextService;
+
+    private final BTreeExplainerService bTreeExplainerService;
+    private final SagaCoordinatorService sagaCoordinator;
+    private final UserRepository userRepository;
+
+    @GetMapping("/{workflowId}/executions/{executionId}/explain")
+    public ResponseEntity<?> explainExecutionPlan(
+            @PathVariable UUID workflowId,
+            @PathVariable UUID executionId,
+            Authentication authentication) {
+        UUID userId = getUserIdFromAuth(authentication);
+
+        log.info("📊 Database physical layer trace requested by user: {}", userId);
+        return ResponseEntity.ok(bTreeExplainerService.explainExecutionQuery(userId, workflowId, executionId));
+    }
+
+    @GetMapping("/executions/{executionId}/saga")
+    public ResponseEntity<?> getSagaStatus(@PathVariable UUID executionId) {
+        return sagaCoordinator.getSagaForExecution(executionId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PageResponse<WorkflowDto>> getWorkflows(
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -113,7 +137,7 @@ public class WorkflowController {
             Map<String, Object> payload = new HashMap<>();
             boolean waitForCompletion = false;
             long timeoutMs = 300000;
-            List<String> returnVariables=Collections.emptyList();
+            List<String> returnVariables = Collections.emptyList();
 
             if (requestBody != null) {
                 if (requestBody.containsKey("payload") || requestBody.containsKey("returnVariables") || requestBody.containsKey("waitForCompletion")) {
@@ -121,12 +145,14 @@ public class WorkflowController {
                     if (payloadMap != null) {
                         payload.putAll(payloadMap);
                     }
-                    returnVariables = (List<String>) requestBody.get("returnVariables");
+                    if (requestBody.get("returnVariables") instanceof List) {
+                        returnVariables = (List<String>) requestBody.get("returnVariables");
+                    }
                     waitForCompletion = Boolean.TRUE.equals(requestBody.get("waitForCompletion"));
                     if (requestBody.containsKey("timeoutMs")) {
                         timeoutMs = ((Number) requestBody.get("timeoutMs")).longValue();
                     }
-                } else {
+                } else if (requestBody.containsKey("payload")) {
                     payload.putAll((Map<String, Object>) requestBody.get("payload"));
                 }
             }
@@ -138,8 +164,6 @@ public class WorkflowController {
             if (googleToken != null && !googleToken.isBlank()) {
                 payload.put("googleAccessToken", googleToken);
                 log.info("✅ Added Google access token to payload");
-            } else {
-                log.warn("⚠️ No Google access token found in headers");
             }
 
             String authHeader = request.getHeader("Authorization");
@@ -148,7 +172,6 @@ public class WorkflowController {
                 try {
                     String userEmail = jwtService.extractEmail(jwt);
                     payload.put("user_email", userEmail);
-                    log.info("✅ Added user email to payload: {}", userEmail);
                 } catch (Exception e) {
                     log.warn("⚠️ Failed to extract user email from JWT: {}", e.getMessage());
                 }
@@ -156,10 +179,6 @@ public class WorkflowController {
 
             payload.put("execution_started_at", Instant.now().toString());
             payload.put("workflow_id", workflowId.toString());
-
-            Map<String, Object> logPayload = new HashMap<>(payload);
-            logPayload.remove("googleAccessToken");
-            log.info("📦 Final execution payload: {}", logPayload);
 
             UUID executionId = workflowCoordinator.startWorkflowExecution(workflowId, payload, returnVariables);
 
@@ -188,20 +207,17 @@ public class WorkflowController {
         }
     }
 
-
-
     private UUID getUserIdFromAuth(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new RuntimeException("Unauthenticated");
         }
-
         Object principal = authentication.getPrincipal();
-
         if (principal instanceof Users user) {
             return user.getId();
         }
-
-        throw new RuntimeException("Invalid authentication principal: " + principal);
+        return userRepository.findByEmail(authentication.getName())
+                .map(Users::getId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + authentication.getName()));
     }
 
     @PostMapping("/{workflowId}/run-sync")
@@ -246,7 +262,6 @@ public class WorkflowController {
                     Map<String, Object> result = returnHandler.createReturnPayload(executionId, "COMPLETED");
                     returnHandler.clearReturnVariables(executionId);
                     executionContextService.clearExecution(executionId);
-                    log.info("cleared Execution context: {}", executionId);
                     return ResponseEntity.ok(result);
 
                 } else if ("FAILED".equals(status)) {
@@ -257,7 +272,7 @@ public class WorkflowController {
                     return ResponseEntity.ok(result);
                 }
 
-                Thread.sleep(1000); // Check every second
+                Thread.sleep(1000);
             }
 
             log.warn("⏰ Execution timeout reached: {}", executionId);
@@ -268,15 +283,10 @@ public class WorkflowController {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("🛑 Execution waiting interrupted: {}", executionId, e);
-            Map<String, Object> result = returnHandler.createReturnPayload(executionId, "INTERRUPTED");
-            result.put("error", "Execution waiting interrupted");
-            return ResponseEntity.internalServerError().body(result);
-
+            return ResponseEntity.internalServerError().body(Map.of("error", "Interrupted"));
         } catch (Exception e) {
             log.error("💥 Error while waiting for execution: {}", executionId, e);
-            Map<String, Object> result = returnHandler.createReturnPayload(executionId, "ERROR");
-            result.put("error", "Error while waiting: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(result);
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
 }

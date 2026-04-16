@@ -19,26 +19,6 @@ import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * BTreeExplainerService — Feature 1: B-Tree Execution Explorer
- *
- * How it works:
- * 1. Given a workflow + owner query, we build the JPQL query and its native SQL equivalent.
- * 2. We run EXPLAIN (FORMAT JSON, ANALYZE, BUFFERS) on it using a native JDBC query.
- * 3. We parse the resulting JSON plan to extract:
- *    - Node Type (Index Scan, Seq Scan, etc.)
- *    - Index Name (which B-Tree index Postgres chose)
- *    - Planning & Execution time
- *    - Estimated rows scanned vs actual rows
- * 4. We compute the theoretical B-Tree depth = ceil(log₃₀₀(N)) to explain the
- *    O(log N) complexity to the professor.
- * 5. We store the result in query_explain_cache for the UI to render.
- *
- * PROFESSOR TALKING POINT:
- * "A B-Tree of height h can locate a record in h disk I/Os. With our composite
- *  index (owner_id, workflow_id, started_at DESC), a query that previously required
- *  a full table scan of ~50,000 rows now resolves in O(log₃₀₀(50000)) ≈ 3 I/Os."
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -74,12 +54,25 @@ public class BTreeExplainerService {
 
         log.debug("Running EXPLAIN ANALYZE: {}", explainSql);
 
-        String explainJson = (String) entityManager
-                .createNativeQuery("SELECT (" + explainSql + ")::text")
-                .getSingleResult();
+        try {
+            Object result = entityManager.createNativeQuery(explainSql).getSingleResult();
+            String explainJson = result.toString();
 
-        QueryExplainCache cached = parsePlan(explainJson, ownerId, workflowId, executionId);
-        return explainCacheRepository.save(cached);
+            QueryExplainCache cached = parsePlan(explainJson, ownerId, workflowId, executionId);
+            return explainCacheRepository.save(cached);
+        } catch (Exception e) {
+            log.error("DBMS Analysis failed for SQL: {}", explainSql, e);
+            return QueryExplainCache.builder()
+                    .executionId(executionId)
+                    .workflowId(workflowId)
+                    .ownerId(ownerId)
+                    .queryFingerprint(buildFingerprint(ownerId, workflowId))
+                    .scanType("Error")
+                    .explainJson("{\"error\": \"" + e.getMessage() + "\"}")
+                    .indexDepth(0)
+                    .capturedAt(Instant.now())
+                    .build();
+        }
     }
 
     private QueryExplainCache parsePlan(String rawJson, UUID ownerId, UUID workflowId, UUID executionId) {
@@ -122,7 +115,7 @@ public class BTreeExplainerService {
                     .ownerId(ownerId)
                     .queryFingerprint(buildFingerprint(ownerId, workflowId))
                     .explainJson(rawJson)
-                    .scanType("Unknown")
+                    .scanType("Parsing Error")
                     .indexDepth(0)
                     .capturedAt(Instant.now())
                     .build();

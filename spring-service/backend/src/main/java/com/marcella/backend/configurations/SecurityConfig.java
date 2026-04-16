@@ -27,6 +27,8 @@ public class SecurityConfig {
                                 "/api/v1/workflows/**",
                                 "/api/v1/user/**",
                                 "/api/v1/triggers/**",
+                                "/api/v1/performance/**",
+                                "/api/v1/saga/**",
                                 "/api/contact"
                         ).permitAll()
                         .anyRequest().authenticated()
