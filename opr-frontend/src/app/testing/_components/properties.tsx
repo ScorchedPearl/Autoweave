@@ -693,6 +693,8 @@ export const PropertiesPanel: React.FC = () => {
     enhancedNodes,
     updateNodeConfiguration,
     updateNodeData,
+    isPropertiesCollapsed,
+    setIsPropertiesCollapsed,
   } = useWorkflow();
   const { edges } = useDragContext();
 
@@ -719,7 +721,6 @@ export const PropertiesPanel: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [localConfig, setLocalConfig] = useState<Record<string, any>>({});
   const [hasUnsaved, setHasUnsaved] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [optionalOpen, setOptionalOpen] = useState(false);
   const [outputsOpen, setOutputsOpen] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
@@ -769,7 +770,7 @@ export const PropertiesPanel: React.FC = () => {
   /* ── Empty state ─────────────────────────────────────────────── */
   if (!selectedNode) {
     return (
-      <div className="w-80 bg-[#080a0f] border-l border-white/[0.07] h-screen flex flex-col">
+      <div className="w-80 bg-[#080a0f]/40 backdrop-blur-2xl border border-white/[0.1] rounded-2xl h-full flex flex-col shadow-2xl">
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center">
             <Settings className="w-6 h-6 text-white/20" />
@@ -795,14 +796,14 @@ export const PropertiesPanel: React.FC = () => {
   }
 
   /* ── Collapsed state ─────────────────────────────────────────── */
-  if (isCollapsed) {
+  if (isPropertiesCollapsed) {
     const style = getNodeStyle(selectedNode.data.nodeType);
     return (
       <div
-        className="w-10 bg-[#080a0f] border-l border-white/[0.07] h-screen flex flex-col items-center pt-4 gap-3"
+        className="w-10 bg-[#080a0f]/40 backdrop-blur-2xl border border-white/[0.1] rounded-2xl h-full flex flex-col items-center pt-4 gap-3 shadow-2xl"
       >
         <button
-          onClick={() => setIsCollapsed(false)}
+          onClick={() => setIsPropertiesCollapsed(false)}
           className="p-2 rounded-lg text-white/35 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
           title="Expand"
         >
@@ -828,7 +829,7 @@ export const PropertiesPanel: React.FC = () => {
   const optionalFields = schema?.fields.filter((f) => !f.required) ?? [];
 
   return (
-    <div className="w-80 bg-[#080a0f] border-l border-white/[0.07] h-screen flex flex-col overflow-hidden">
+    <div className="w-80 bg-[#080a0f]/40 backdrop-blur-2xl border border-white/[0.1] rounded-2xl h-full flex flex-col overflow-hidden shadow-2xl">
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <div
@@ -864,7 +865,7 @@ export const PropertiesPanel: React.FC = () => {
               />
             )}
             <button
-              onClick={() => setIsCollapsed(true)}
+              onClick={() => setIsPropertiesCollapsed(true)}
               className="p-1.5 rounded-lg text-white/25 hover:text-white/55 hover:bg-white/[0.05] transition-colors"
               title="Collapse"
             >

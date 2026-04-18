@@ -16,6 +16,7 @@ import '@xyflow/react/dist/style.css';
 import { NodeTemplate, nodeTemplates, WorkflowNodeData } from '@/lib/mockdata';
 import WorkflowNode from './_components/wokrflowNode';
 import { useDragContext } from '@/provider/dragprovider';
+import { useWorkflow } from '@/provider/statecontext';
 
 export type CustomNode = Node<WorkflowNodeData>
 
@@ -42,6 +43,12 @@ const WorkflowCanvas = () => {
     onSelectionChange,
     setSelectedNodes,
   } = useDragContext();
+
+  const { isPropertiesCollapsed, selectedNodeId } = useWorkflow();
+
+  const minimapRightOffset = selectedNodeId 
+    ? (isPropertiesCollapsed ? 60 : 340) 
+    : 340;
 
   const project = useProject()
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -161,7 +168,9 @@ const WorkflowCanvas = () => {
     }
   }, [onSelectionChange, setSelectedNodes]);
   return (
-    <div className="h-screen w-full relative bg-black">
+    <div className="h-screen w-full relative bg-[#050505] overflow-hidden">
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div
         className="w-full h-full"
         ref={reactFlowWrapper}
@@ -194,23 +203,29 @@ const WorkflowCanvas = () => {
           selectionMode={SelectionMode.Partial}
         >
           <Background
-            color="#1f2937"
-            gap={20}
-            size={1}
+            color="#3b82f6"
+            gap={24}
+            size={1.5}
             variant={BackgroundVariant.Dots}
+            className="opacity-40"
           />
           <Controls
             showInteractive={false}
             showZoom={false}
-            className="bg-black/80 backdrop-blur-xl border border-white/10 shadow-xl [&>button]:bg-black/60 [&>button]:border-white/10 [&>button]:text-white/60 [&>button:hover]:bg-black/80 [&>button:hover]:text-white [&>button:hover]:border-cyan-400/50"
+            style={{ left: 340, top: 24, bottom: 'auto' }}
+            className="!bg-transparent !border-none !shadow-none [&>button]:!w-12 [&>button]:!h-12 [&>button]:!rounded-2xl [&>button]:!bg-black/60 [&>button]:backdrop-blur-2xl [&>button]:!border [&>button]:!border-white/10 [&>button]:!shadow-2xl [&>button]:!text-white/70 [&>button:hover]:!text-cyan-400 [&>button:hover]:!border-cyan-400/50 [&>button]:transition-all [&>button:hover]:scale-105 [&>button:hover]:!bg-black/80"
           />
           <MiniMap
             nodeStrokeWidth={3}
+            nodeColor="#06b6d4"
+            nodeBorderRadius={8}
+            maskColor="rgba(0, 0, 0, 0.7)"
             zoomable
             pannable
-            className="bg-black/80 backdrop-blur-xl border border-white/10 shadow-xl"
+            className="!bg-[#050505]/40 !backdrop-blur-2xl !border !border-white/10 !shadow-[0_0_40px_rgba(0,0,0,0.5)] !rounded-2xl transition-all duration-300 overflow-hidden"
             style={{
-              backgroundColor: '#000000',
+              right: minimapRightOffset,
+              bottom: 24,
             }}
           />
         </ReactFlow>

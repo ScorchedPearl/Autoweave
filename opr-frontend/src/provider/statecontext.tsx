@@ -69,6 +69,9 @@ interface WorkflowContextType {
   // Current saved workflow tracking
   currentWorkflowId: string | null;
   setCurrentWorkflowId: (id: string | null) => void;
+
+  isPropertiesCollapsed: boolean;
+  setIsPropertiesCollapsed: (collapsed: boolean) => void;
 }
 
 const WorkflowContext = createContext<WorkflowContextType | null>(null);
@@ -80,6 +83,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [returnVariableTags, setReturnVariableTags] = useState<Tag[]>([]);
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
+  const [isPropertiesCollapsed, setIsPropertiesCollapsed] = useState(false);
   const [workflowMetadata, setWorkflowMetadata] = useState<WorkflowExecutionData['metadata']>({
     name: 'Untitled Workflow',
     description: '',
@@ -329,6 +333,8 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    clearReturnVariables,
    currentWorkflowId,
    setCurrentWorkflowId,
+   isPropertiesCollapsed,
+   setIsPropertiesCollapsed,
   };
 
   return (

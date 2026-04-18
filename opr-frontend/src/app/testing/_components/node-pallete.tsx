@@ -23,7 +23,7 @@ const NodePalette: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-transparent relative">
+    <div className="h-screen bg-transparent relative pointer-events-none">
       <FloatingAddButton 
         onClick={handleToggle}
         isOpen={isPaletteOpen ?? false}

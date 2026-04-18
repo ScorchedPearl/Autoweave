@@ -43,15 +43,15 @@ export default function NodePalettePanel({ isOpen, onClose }: {
   return (
     <>
       <div
-        className="inset-0 bg-black/60  backdrop-blur-sm z-40 transition-opacity duration-300 "
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ${draggedItem ? 'pointer-events-none' : 'pointer-events-auto'}`}
         onClick={onClose}
       />
 
       <div className={`
-        fixed right-6 top-24 bottom-6 w-96 bg-black/70 backdrop-blur-2xl shadow-xl z-50
-        border border-white/10 rounded-2xl overflow-y-auto
-        transform transition-all duration-300 ease-out
-        ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}
+        fixed left-1/2 bottom-28 -translate-x-1/2 w-[480px] max-h-[60vh] flex flex-col bg-black/70 backdrop-blur-2xl shadow-2xl z-50 pointer-events-auto
+        border border-white/10 rounded-2xl overflow-hidden
+        transform transition-all duration-300 ease-out origin-bottom
+        ${isOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-10 opacity-0 scale-95 pointer-events-none'}
       `}>
         <div className="p-4 border-b border-white/[0.07] bg-[#0b0d12] rounded-t-2xl">
           <div className="flex items-center justify-between mb-3">

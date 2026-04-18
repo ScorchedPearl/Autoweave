@@ -8,13 +8,13 @@ export function FloatingAddButton({ onClick, isOpen }: {
     <button
       onClick={onClick}
       className={`
-        fixed top-6 right-65 z-50
+        fixed bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-auto
         w-14 h-14 bg-black/80 hover:bg-black/90 border border-white/10
-        text-white rounded-sm shadow-xl backdrop-blur-xl
+        text-white rounded-2xl shadow-2xl backdrop-blur-xl
         flex items-center justify-center
         transition-all duration-300 ease-out
-        hover:scale-105 active:scale-95 hover:shadow-2xl hover:border-cyan-400/50
-        ${isOpen ? 'rotate-45 bg-black/90 border-cyan-400/50' : 'rotate-0'}
+        hover:scale-105 active:scale-95 hover:shadow-cyan-500/20 hover:border-cyan-400/50
+        ${isOpen ? 'rotate-45 bg-black/90 border-cyan-400/50 shadow-cyan-500/20' : 'rotate-0'}
       `}
     >
       <Plus className="w-6 h-6" />

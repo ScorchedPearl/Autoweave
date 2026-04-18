@@ -56,7 +56,7 @@ export function ResizableSidebar({
     <div className="flex">
       <div
         ref={sidebarRef}
-        className="relative bg-black border-r border-white/10"
+        className="relative bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full"
         style={{ width: `${width}px` }}
       >
         <div className="absolute inset-0">

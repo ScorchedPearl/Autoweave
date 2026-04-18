@@ -14,16 +14,28 @@ export default function FlowPage() {
       <SidebarProvider>
         <DragProvider>
               <WorkflowProvider>
-        <div className="flex min-h-screen bg-background">
-          <Sidebar />
-          <div className="flex-1 flex flex-col">
+        <div className="relative w-screen h-screen overflow-hidden bg-background">
+          {/* Canvas takes the absolute full screen background */}
+          <div className="absolute inset-0 z-0">
+            <CanvasDropZone />
+          </div>
+          
+          {/* Floating UI Elements Overlay */}
+          <div className="pointer-events-none absolute inset-0 z-10 flex justify-between">
+            {/* Sidebar floating left */}
+            <div className="pointer-events-auto h-full py-4 pl-4 drop-shadow-2xl">
+              <Sidebar />
+            </div>
             
-                <div className="overflow-hidden h-screen bg-background flex">
-                  <CanvasDropZone />
-                  <NodePalette />
-                  <PropertiesPanel />
-                </div>
-             
+            {/* Properties Panel floating right */}
+            <div className="pointer-events-auto h-full py-4 pr-4 drop-shadow-2xl">
+              <PropertiesPanel />
+            </div>
+          </div>
+
+          {/* Node Palette floating bottom/center */}
+          <div className="absolute inset-0 z-20 pointer-events-none">
+            <NodePalette />
           </div>
         </div>
          </WorkflowProvider>
