@@ -90,5 +90,5 @@ logging:
     redis: WARN
 
 sendgrid:
-  api-key: ${SENDGRID_API_KEY}
+  api-key: "Sk.efefe"
   from-email: marcellapearl0627@gmail.com

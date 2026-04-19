@@ -54,16 +54,18 @@ const Header = () => {
                     >
                       Dashboard
                     </Link>
-:
+: <Link
+href="/auth">
                   <Button
                     variant="ghost"
                     size="sm"
                     className="bg-white text-black hover:bg-white/90 font-medium px-4 py-2 rounded-sm transition-all duration-200 hover:scale-105"
-                    onClick={()=>redirect('/auth')}
+           
                   >
                     Sign in
                     <ArrowRight className="ml-1 w-4 h-4" />
                   </Button>
+                   </Link>
 }
           </div>
 

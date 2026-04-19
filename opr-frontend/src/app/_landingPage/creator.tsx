@@ -114,7 +114,7 @@ export default function Creator() {
   };
 
   return (
-    <section  className="py-32 bg-gradient-to-b from-gray-50 to-white select-none">
+    <section  className="py-32 bg-gradient-to-b from-[#060810] to-black select-none">
       <div className=" mx-auto  text-center">
         <div className="bg-black rounded-3xl py-12 md:py-16 relative overflow-hidden">
   
