@@ -98,6 +98,10 @@ async def get_supported_node_types():
             "k-means", 
             "python-task",
             "question-answer",
-            "clusterization"
+            "clusterization",
+            "cp-solver",
+            "cp-testgen",
+            "cp-executor",
+            "cp-agent"
         ]
     }

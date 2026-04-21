@@ -9,6 +9,26 @@ function getAuthToken() {
   return `Bearer ${rawToken}`;
 }
 
+export interface WorkflowListItem {
+  id: string;
+  name: string;
+  description?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  workflowData: any;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
 export async function createWorkflow(data: {
   name: string;
   description?: string;
@@ -31,6 +51,63 @@ export async function createWorkflow(data: {
   }
 }
 
+export async function fetchWorkflows(
+  page = 0,
+  size = 20
+): Promise<PageResponse<WorkflowListItem>> {
+  try {
+    const token = getAuthToken();
+    const response = await axios.get(API_BASE_URL, {
+      headers: { Authorization: token },
+      params: { page, size },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching workflows:', error);
+    throw error;
+  }
+}
+
+export async function fetchWorkflow(id: string): Promise<WorkflowListItem> {
+  try {
+    const token = getAuthToken();
+    const response = await axios.get(`${API_BASE_URL}/${id}`, {
+      headers: { Authorization: token },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching workflow:', error);
+    throw error;
+  }
+}
+
+export async function updateWorkflow(
+  id: string,
+  data: { name: string; description?: string; workflowData: object }
+) {
+  try {
+    const token = getAuthToken();
+    const response = await axios.put(`${API_BASE_URL}/${id}`, data, {
+      headers: { Authorization: token },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating workflow:', error);
+    throw error;
+  }
+}
+
+export async function deleteWorkflow(id: string) {
+  try {
+    const token = getAuthToken();
+    await axios.delete(`${API_BASE_URL}/${id}`, {
+      headers: { Authorization: token },
+    });
+  } catch (error) {
+    console.error('Error deleting workflow:', error);
+    throw error;
+  }
+}
 
 export async function runWorkflow(
   workflowId: string,

@@ -1,5 +1,6 @@
 
 import React, { useCallback, useRef } from 'react';
+import { Workflow } from 'lucide-react';
 import {
   ReactFlow,
   Node,
@@ -236,7 +237,7 @@ const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
         {(nodes?.length === 0) && !isDragOver && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="text-center space-y-6">
-              <div className="text-8xl opacity-20">🎯</div>
+              <Workflow className="w-16 h-16 mx-auto text-white/15 mb-2" />
               <div className="space-y-2">
                 <div className="text-2xl font-semibold text-white">
                   Start Building Your Workflow

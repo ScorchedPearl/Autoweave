@@ -2,6 +2,7 @@ import React, { createContext, useContext, useCallback, useState, useEffect } fr
 import { Node } from '@xyflow/react';
 import { WorkflowNodeData} from '@/lib/mockdata';
 import { useDragContext } from '@/provider/dragprovider';
+import { Tag } from '@/components/ui/tag-input';
 
 export interface EnhancedWorkflowNodeData extends WorkflowNodeData {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,15 +58,28 @@ interface WorkflowContextType {
   
   workflowMetadata: WorkflowExecutionData['metadata'];
   updateWorkflowMetadata: (metadata: Partial<WorkflowExecutionData['metadata']>) => void;
+
+  // Return variable management
+  returnVariableTags: Tag[];
+  addReturnVariable: (key: string) => void;
+  removeReturnVariable: (key: string) => void;
+  clearReturnVariables: () => void;
+  setReturnVariableTags: (tags: Tag[]) => void;
+
+  // Current saved workflow tracking
+  currentWorkflowId: string | null;
+  setCurrentWorkflowId: (id: string | null) => void;
 }
 
 const WorkflowContext = createContext<WorkflowContextType | null>(null);
 
 export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { nodes, setNodes, edges, selectedNodes } = useDragContext();
+  const { nodes, setNodes, edges, selectedNodes, setEdges } = useDragContext();
   
   const [enhancedNodes, setEnhancedNodes] = useState<EnhancedNode[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [returnVariableTags, setReturnVariableTags] = useState<Tag[]>([]);
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
   const [workflowMetadata, setWorkflowMetadata] = useState<WorkflowExecutionData['metadata']>({
     name: 'Untitled Workflow',
     description: '',
@@ -205,7 +219,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const loadedNodes: EnhancedNode[] = data.nodes.map(nodeData => ({
       id: nodeData.id,
       type: 'workflowNode',
-      position: nodeData.position,
+      position: nodeData.position || { x: Math.random() * 400, y: Math.random() * 400 },
       data: {
         id: nodeData.id,
         label: nodeData.type,
@@ -213,13 +227,31 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         icon: '🔧',
         description: '',
         configuration: nodeData.configuration,
+        config: nodeData.configuration,
         executionState: 'idle',
       },
     }));
 
     setEnhancedNodes(loadedNodes);
+    if (setNodes) setNodes(loadedNodes as unknown as import('@xyflow/react').Node<import('@/lib/mockdata').WorkflowNodeData>[]);
+
+    // Restore edges onto the ReactFlow canvas
+    if (setEdges && data.edges) {
+      const restoredEdges = data.edges.map(edge => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle ?? undefined,
+        targetHandle: edge.targetHandle ?? undefined,
+        type: 'smoothstep',
+        animated: true,
+        style: { stroke: '#3b82f6', strokeWidth: 2 },
+      }));
+      setEdges(restoredEdges);
+    }
+
     setWorkflowMetadata(data.metadata);
-  }, []);
+  }, [setNodes, setEdges]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
       if (nodes && nodes.length >= 0) {
@@ -261,6 +293,22 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
   }, []);
 
+  // Return variable helpers
+  const addReturnVariable = useCallback((key: string) => {
+    setReturnVariableTags(prev => {
+      if (prev.some(t => t.id === key)) return prev; // deduplicate
+      return [...prev, { id: key, text: key }];
+    });
+  }, []);
+
+  const removeReturnVariable = useCallback((key: string) => {
+    setReturnVariableTags(prev => prev.filter(t => t.id !== key));
+  }, []);
+
+  const clearReturnVariables = useCallback(() => {
+    setReturnVariableTags([]);
+  }, []);
+
   const contextValue: WorkflowContextType = {
    enhancedNodes,
    setEnhancedNodes,
@@ -273,6 +321,13 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    validateWorkflow,
    workflowMetadata,
    updateWorkflowMetadata,
+   returnVariableTags,
+   setReturnVariableTags,
+   addReturnVariable,
+   removeReturnVariable,
+   clearReturnVariables,
+   currentWorkflowId,
+   setCurrentWorkflowId,
   };
 
   return (

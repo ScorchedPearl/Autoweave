@@ -1,20 +1,30 @@
 import { useWorkflow } from "@/provider/statecontext";
-import { createWorkflow } from "@/lib/api";
+import { createWorkflow, updateWorkflow } from "@/lib/api";
 import { serializeWorkflowForBackend } from "@/lib/serializeWorkflowData";
 
 export function useSaveWorkflow() {
-  const { getWorkflowExecutionData } = useWorkflow();
+  const { getWorkflowExecutionData, currentWorkflowId, setCurrentWorkflowId } = useWorkflow();
 
   return async () => {
     const fullWorkflow = getWorkflowExecutionData();
+    const workflowData = serializeWorkflowForBackend(fullWorkflow);
 
     const payload = {
-      name: fullWorkflow.metadata.name,
+      name: fullWorkflow.metadata.name || "Untitled Workflow",
       description: fullWorkflow.metadata.description,
-      workflowData: serializeWorkflowForBackend(fullWorkflow),
+      workflowData,
     };
 
-    const response = await createWorkflow(payload);
+    let response;
+    if (currentWorkflowId) {
+      // Re-save (update) existing workflow
+      response = await updateWorkflow(currentWorkflowId, payload);
+    } else {
+      // First save — create new
+      response = await createWorkflow(payload);
+      setCurrentWorkflowId(response.id);
+    }
+
     return response;
   };
 }

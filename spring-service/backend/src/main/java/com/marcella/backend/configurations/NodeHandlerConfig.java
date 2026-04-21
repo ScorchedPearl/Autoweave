@@ -29,6 +29,10 @@ public class NodeHandlerConfig {
     private final GmailAddLabelNodeHandler gmailAddLabelNodeHandler;
     private final GmailReplyNodeHandler gmailReplyNodeHandler;
 
+    private final GeminiAuthNodeHandler geminiAuthNodeHandler;
+    private final OpenAIAuthNodeHandler openAIAuthNodeHandler;
+    private final ClaudeAuthNodeHandler claudeAuthNodeHandler;
+
     @Bean
     public List<NodeHandler> nodeHandlers() {
         return List.of(
@@ -47,7 +51,10 @@ public class NodeHandlerConfig {
                 gmailAddLabelNodeHandler,
                 gmailReplyNodeHandler,
                 gmailCreateDraftNodeHandler,
-                gmailMarkReadNodeHandler
+                gmailMarkReadNodeHandler,
+                geminiAuthNodeHandler,
+                openAIAuthNodeHandler,
+                claudeAuthNodeHandler
         );
     }
 }

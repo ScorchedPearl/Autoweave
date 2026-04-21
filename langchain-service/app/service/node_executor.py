@@ -15,6 +15,10 @@ from app.handlers.translationhandler import TranslationHandler
 from app.models.workflow_message import NodeExecutionMessage, NodeCompletionMessage
 from app.service.redis import RedisService
 from app.handlers.textgeneration import TextGenerationHandler
+from app.handlers.cpsolverhandler import CPSolverHandler
+from app.handlers.cptestgenhandler import CPTestGenHandler
+from app.handlers.cpexecutorhandler import CPExecutorHandler
+from app.handlers.cpagenthandler import CPAgentHandler
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +44,10 @@ class NodeExecutorService:
             "content-generation": ContentGenerationHandler(redis_service),
             "search-agent": SearchAgentHandler(redis_service),
             "data-analyst-agent": DataAnalystAgentHandler(redis_service),
+            "cp-solver": CPSolverHandler(redis_service),
+            "cp-testgen": CPTestGenHandler(redis_service),
+            "cp-executor": CPExecutorHandler(redis_service),
+            "cp-agent": CPAgentHandler(redis_service),
         }
         
 

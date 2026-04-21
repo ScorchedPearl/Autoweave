@@ -26,7 +26,11 @@ public class WorkflowEventProducer {
             "translation",
             "content-generation",
             "search-agent",
-            "data-analyst-agent"
+            "data-analyst-agent",
+            "cp-solver",
+            "cp-testgen",
+            "cp-executor",
+            "cp-agent"
     );
 
     private static final Set<String> SPRING_NODE_TYPES = Set.of(
@@ -48,7 +52,13 @@ public class WorkflowEventProducer {
             "gmailMarkRead",
             "gmailAddLabel",
             "gmailCreateDraft",
-            "gmailReply"
+            "gmailReply",
+            "postgres-db",
+            "mysql-db",
+            "mongo-db",
+            "gemini-auth",
+            "openai-auth",
+            "claude-auth"
     );
 
     public void publishNodeExecution(NodeExecutionMessage message) {

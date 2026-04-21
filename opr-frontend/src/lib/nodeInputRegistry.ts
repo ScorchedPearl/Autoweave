@@ -1,0 +1,1397 @@
+export type FieldType =
+  | "text"
+  | "textarea"
+  | "url"
+  | "email"
+  | "number"
+  | "slider"
+  | "select"
+  | "tags"
+  | "boolean"
+  | "mapping";
+
+export interface SelectOption { value: string; label: string }
+
+export interface FieldSchema {
+  key: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  placeholder?: string;
+  hint?: string;
+  defaultValue?: unknown;
+  options?: SelectOption[];
+  min?: number;
+  max?: number;
+  step?: number;
+  supportsTemplate?: boolean;
+  rows?: number;
+}
+
+export interface NodeInputSchema {
+  description: string;
+  requiresGoogle?: boolean;
+  fields: FieldSchema[];
+}
+
+const MODELS: SelectOption[] = [
+  { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
+  { value: "gpt-4", label: "GPT-4" },
+  { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
+];
+
+export const NODE_INPUT_REGISTRY: Record<string, NodeInputSchema> = {
+
+  /* ─── Trigger / Start ─────────────────────────────────────── */
+  trigger: {
+    description: "Entry point triggered by a webhook call. Receives an HTTP request and passes its payload downstream.",
+    fields: [
+      {
+        key: "url",
+        label: "Webhook URL",
+        type: "url",
+        required: false,
+        placeholder: "https://your-endpoint.com/webhook",
+        hint: "Optional URL to call as a webhook. Leave empty to receive incoming calls.",
+        supportsTemplate: true,
+      },
+      {
+        key: "method",
+        label: "HTTP Method",
+        type: "select",
+        required: false,
+        defaultValue: "POST",
+        options: [
+          { value: "GET", label: "GET" },
+          { value: "POST", label: "POST" },
+          { value: "PUT", label: "PUT" },
+          { value: "DELETE", label: "DELETE" },
+        ],
+      },
+      {
+        key: "payload",
+        label: "Payload (JSON)",
+        type: "textarea",
+        required: false,
+        placeholder: '{ "key": "{{value}}" }',
+        hint: "JSON body to send. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 4,
+      },
+    ],
+  },
+
+  start: {
+    description: "Marks the beginning of the workflow. Initialises the execution context with optional seed data.",
+    fields: [
+      {
+        key: "context",
+        label: "Initial Context (JSON)",
+        type: "textarea",
+        required: false,
+        placeholder: '{ "user": "alice", "amount": 100 }',
+        hint: "Optional JSON object to seed the workflow context.",
+        rows: 4,
+      },
+    ],
+  },
+
+  /* ─── Logic ────────────────────────────────────────────────── */
+  condition: {
+    description: "Evaluates a condition and routes execution down the True or False branch.",
+    fields: [
+      {
+        key: "condition.field",
+        label: "Field Name",
+        type: "text",
+        required: true,
+        placeholder: "e.g. confidence",
+        hint: "Key from the workflow context to evaluate.",
+        supportsTemplate: false,
+      },
+      {
+        key: "condition.operator",
+        label: "Operator",
+        type: "select",
+        required: true,
+        defaultValue: "==",
+        options: [
+          { value: "==",              label: "Equals (==)" },
+          { value: "!=",              label: "Not Equals (!=)" },
+          { value: ">",               label: "Greater Than (>)" },
+          { value: ">=",              label: "Greater Than or Equal (>=)" },
+          { value: "<",               label: "Less Than (<)" },
+          { value: "<=",              label: "Less Than or Equal (<=)" },
+          { value: "contains",        label: "Contains" },
+          { value: "starts_with",     label: "Starts With" },
+          { value: "ends_with",       label: "Ends With" },
+          { value: "is_empty",        label: "Is Empty" },
+          { value: "is_not_empty",    label: "Is Not Empty" },
+          { value: "equals_ignore_case", label: "Equals (case-insensitive)" },
+        ],
+      },
+      {
+        key: "condition.value",
+        label: "Expected Value",
+        type: "text",
+        required: true,
+        placeholder: 'e.g. "true", "0.9", "hello"',
+        hint: "Value to compare against. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+      },
+    ],
+  },
+
+  transform: {
+    description: "Renames or copies fields from the context into new keys. Useful for reshaping data between nodes.",
+    fields: [
+      {
+        key: "mapping",
+        label: "Field Mapping",
+        type: "mapping",
+        required: true,
+        hint: "Map an existing context key (source) to a new key name (target).",
+      },
+    ],
+  },
+
+  delay: {
+    description: "Pauses the workflow for a specified duration before passing data to the next node.",
+    fields: [
+      {
+        key: "duration",
+        label: "Delay Duration (ms)",
+        type: "number",
+        required: true,
+        defaultValue: 1000,
+        min: 0,
+        max: 300000,
+        placeholder: "1000",
+        hint: "Time to wait in milliseconds. Max: 300 000 ms (5 min).",
+        supportsTemplate: true,
+      },
+      {
+        key: "message",
+        label: "Completion Message",
+        type: "text",
+        required: false,
+        defaultValue: "Delay completed",
+        placeholder: "Delay completed",
+        hint: "Optional message stored in output.",
+        supportsTemplate: true,
+      },
+    ],
+  },
+
+  /* ─── HTTP ─────────────────────────────────────────────────── */
+  httpGet: {
+    description: "Sends an HTTP GET request and stores the response in the workflow context.",
+    fields: [
+      {
+        key: "url",
+        label: "URL",
+        type: "url",
+        required: true,
+        placeholder: "https://api.example.com/resource",
+        hint: "Full URL to call. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+      },
+      {
+        key: "headers",
+        label: "Headers",
+        type: "text",
+        required: false,
+        placeholder: "Authorization: Bearer {{token}}, Content-Type: application/json",
+        hint: "Comma-separated key: value pairs.",
+        supportsTemplate: true,
+      },
+    ],
+  },
+
+  httpPost: {
+    description: "Sends an HTTP POST request with a JSON body.",
+    fields: [
+      {
+        key: "url",
+        label: "URL",
+        type: "url",
+        required: true,
+        placeholder: "https://api.example.com/resource",
+        hint: "Supports {{variable}} substitution.",
+        supportsTemplate: true,
+      },
+      {
+        key: "body",
+        label: "Request Body (JSON)",
+        type: "textarea",
+        required: false,
+        placeholder: '{ "key": "{{value}}" }',
+        hint: "JSON body. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 4,
+      },
+      {
+        key: "headers",
+        label: "Headers",
+        type: "text",
+        required: false,
+        placeholder: "Authorization: Bearer {{token}}",
+        supportsTemplate: true,
+      },
+    ],
+  },
+
+  httpPut: {
+    description: "Sends an HTTP PUT request — typically used to update a resource.",
+    fields: [
+      {
+        key: "url",
+        label: "URL",
+        type: "url",
+        required: true,
+        placeholder: "https://api.example.com/resource/{{id}}",
+        supportsTemplate: true,
+      },
+      {
+        key: "body",
+        label: "Request Body (JSON)",
+        type: "textarea",
+        required: false,
+        placeholder: '{ "name": "{{newName}}" }',
+        supportsTemplate: true,
+        rows: 4,
+      },
+      {
+        key: "headers",
+        label: "Headers",
+        type: "text",
+        required: false,
+        placeholder: "Authorization: Bearer {{token}}",
+        supportsTemplate: true,
+      },
+    ],
+  },
+
+  httpDelete: {
+    description: "Sends an HTTP DELETE request to remove a resource.",
+    fields: [
+      {
+        key: "url",
+        label: "URL",
+        type: "url",
+        required: true,
+        placeholder: "https://api.example.com/resource/{{id}}",
+        supportsTemplate: true,
+      },
+      {
+        key: "headers",
+        label: "Headers",
+        type: "text",
+        required: false,
+        placeholder: "Authorization: Bearer {{token}}",
+        supportsTemplate: true,
+      },
+    ],
+  },
+
+  /* ─── Utilities ─────────────────────────────────────────────── */
+  calculator: {
+    description: "Evaluates a math expression and stores the result. Supports +, -, *, /, ** and parentheses.",
+    fields: [
+      {
+        key: "expression",
+        label: "Expression",
+        type: "text",
+        required: true,
+        placeholder: "{{price}} * {{quantity}} * 1.2",
+        hint: "Any valid math expression. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+      },
+    ],
+  },
+
+  currentTime: {
+    description: "Returns the current date and time in the given timezone.",
+    fields: [
+      {
+        key: "timeZone",
+        label: "Timezone",
+        type: "select",
+        required: false,
+        defaultValue: "UTC",
+        options: [
+          { value: "UTC",                 label: "UTC" },
+          { value: "America/New_York",    label: "Eastern (US)" },
+          { value: "America/Los_Angeles", label: "Pacific (US)" },
+          { value: "America/Chicago",     label: "Central (US)" },
+          { value: "Europe/London",       label: "London" },
+          { value: "Europe/Paris",        label: "Paris" },
+          { value: "Asia/Kolkata",        label: "India (IST)" },
+          { value: "Asia/Tokyo",          label: "Tokyo" },
+          { value: "Asia/Shanghai",       label: "Shanghai" },
+          { value: "Australia/Sydney",    label: "Sydney" },
+        ],
+      },
+    ],
+  },
+
+  action: {
+    description: "Sends a transactional email via SendGrid. Use {{variable}} in any field to inject workflow data.",
+    fields: [
+      {
+        key: "to",
+        label: "Recipient Email",
+        type: "email",
+        required: true,
+        placeholder: "user@example.com or {{email}}",
+        hint: "Supports {{variable}} substitution.",
+        supportsTemplate: true,
+      },
+      {
+        key: "subject",
+        label: "Subject",
+        type: "text",
+        required: true,
+        placeholder: "Your order {{orderId}} has shipped!",
+        supportsTemplate: true,
+      },
+      {
+        key: "body",
+        label: "Email Body",
+        type: "textarea",
+        required: true,
+        placeholder: "Hi {{name}}, your order is on its way...",
+        hint: "Plain text or HTML. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 5,
+      },
+    ],
+  },
+
+  /* ─── AI Nodes ──────────────────────────────────────────────── */
+  "text-generation": {
+    description: "Generates text from a prompt using an OpenAI model. Great for drafting, completing, or expanding content.",
+    fields: [
+      {
+        key: "prompt",
+        label: "Prompt",
+        type: "textarea",
+        required: true,
+        placeholder: "Write a one-paragraph summary of: {{text}}",
+        hint: "The instruction for the AI. Use {{variable}} to inject workflow data.",
+        supportsTemplate: true,
+        rows: 4,
+      },
+      {
+        key: "max_tokens",
+        label: "Max Output Length (tokens)",
+        type: "number",
+        required: false,
+        defaultValue: 100,
+        min: 10,
+        max: 300,
+        hint: "1 token ≈ 4 characters. Max 300.",
+      },
+      {
+        key: "temperature",
+        label: "Creativity (temperature)",
+        type: "slider",
+        required: false,
+        defaultValue: 0.7,
+        min: 0,
+        max: 2,
+        step: 0.1,
+        hint: "0 = deterministic, 2 = very creative.",
+      },
+      {
+        key: "model",
+        label: "Model",
+        type: "select",
+        required: false,
+        defaultValue: "gpt-3.5-turbo",
+        options: MODELS,
+      },
+    ],
+  },
+
+  summarization: {
+    description: "Condenses a block of text into a concise summary using an AI model.",
+    fields: [
+      {
+        key: "text",
+        label: "Text to Summarise",
+        type: "textarea",
+        required: true,
+        placeholder: "{{document}} or paste your text here",
+        hint: "The content you want summarised. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 5,
+      },
+      {
+        key: "max_length",
+        label: "Max Summary Length (tokens)",
+        type: "number",
+        required: false,
+        defaultValue: 130,
+        min: 20,
+        max: 200,
+        hint: "Upper token limit for the summary. Max 200.",
+      },
+      {
+        key: "min_length",
+        label: "Min Summary Length (words)",
+        type: "number",
+        required: false,
+        defaultValue: 30,
+        min: 5,
+        max: 100,
+      },
+      {
+        key: "model",
+        label: "Model",
+        type: "select",
+        required: false,
+        defaultValue: "gpt-3.5-turbo",
+        options: MODELS,
+      },
+    ],
+  },
+
+  "ai-decision": {
+    description: "Asks an AI to choose the best option from a list based on the given criteria.",
+    fields: [
+      {
+        key: "decision_criteria",
+        label: "Decision Criteria",
+        type: "textarea",
+        required: true,
+        placeholder: "Is the sentiment of '{{text}}' positive or negative?",
+        hint: "Describe the decision to make. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 3,
+      },
+      {
+        key: "options",
+        label: "Options",
+        type: "tags",
+        required: true,
+        defaultValue: ["yes", "no"],
+        placeholder: "Type an option and press Enter",
+        hint: "Add each possible answer as a tag.",
+      },
+      {
+        key: "confidence_threshold",
+        label: "Confidence Threshold",
+        type: "slider",
+        required: false,
+        defaultValue: 0.7,
+        min: 0,
+        max: 1,
+        step: 0.05,
+        hint: "Minimum confidence score required to accept the decision.",
+      },
+    ],
+  },
+
+  "question-answer": {
+    description: "Answers a question using optional context. Provide context for grounded answers, or leave blank for open knowledge.",
+    fields: [
+      {
+        key: "question",
+        label: "Question",
+        type: "textarea",
+        required: true,
+        placeholder: "What is the return policy for order {{orderId}}?",
+        hint: "The question for the AI to answer. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 3,
+      },
+      {
+        key: "context_text",
+        label: "Context (optional)",
+        type: "textarea",
+        required: false,
+        placeholder: "{{document}} — or paste relevant text here",
+        hint: "Background information for a more accurate answer.",
+        supportsTemplate: true,
+        rows: 4,
+      },
+      {
+        key: "model",
+        label: "Model",
+        type: "select",
+        required: false,
+        defaultValue: "gpt-3.5-turbo",
+        options: MODELS,
+      },
+    ],
+  },
+
+  "text-classification": {
+    description: "Labels text into one of your custom categories using an AI model.",
+    fields: [
+      {
+        key: "text",
+        label: "Text to Classify",
+        type: "textarea",
+        required: true,
+        placeholder: "{{message}} or paste text here",
+        supportsTemplate: true,
+        rows: 3,
+      },
+      {
+        key: "categories",
+        label: "Categories",
+        type: "tags",
+        required: true,
+        defaultValue: ["positive", "negative", "neutral"],
+        placeholder: "Add a category and press Enter",
+        hint: "The AI will pick the most fitting category from this list.",
+      },
+      {
+        key: "model",
+        label: "Model",
+        type: "select",
+        required: false,
+        defaultValue: "gpt-3.5-turbo",
+        options: MODELS,
+      },
+    ],
+  },
+
+  "named-entity": {
+    description: "Extracts named entities (people, places, organisations, dates…) from text.",
+    fields: [
+      {
+        key: "text",
+        label: "Text",
+        type: "textarea",
+        required: true,
+        placeholder: "{{document}} or paste text here",
+        supportsTemplate: true,
+        rows: 4,
+      },
+      {
+        key: "entity_types",
+        label: "Entity Types to Extract",
+        type: "tags",
+        required: false,
+        defaultValue: ["PERSON", "ORGANIZATION", "LOCATION", "DATE"],
+        placeholder: "e.g. PERSON, DATE",
+        hint: "Standard NER types: PERSON, ORGANIZATION, LOCATION, DATE, MONEY, etc.",
+      },
+      {
+        key: "model",
+        label: "Model",
+        type: "select",
+        required: false,
+        defaultValue: "gpt-3.5-turbo",
+        options: MODELS,
+      },
+    ],
+  },
+
+  translation: {
+    description: "Translates text from one language to another using an AI model.",
+    fields: [
+      {
+        key: "text",
+        label: "Text to Translate",
+        type: "textarea",
+        required: true,
+        placeholder: "{{text}} or paste text here",
+        supportsTemplate: true,
+        rows: 4,
+      },
+      {
+        key: "target_language",
+        label: "Target Language",
+        type: "select",
+        required: true,
+        defaultValue: "english",
+        options: [
+          { value: "english",    label: "English"    },
+          { value: "french",     label: "French"     },
+          { value: "spanish",    label: "Spanish"    },
+          { value: "german",     label: "German"     },
+          { value: "italian",    label: "Italian"    },
+          { value: "portuguese", label: "Portuguese" },
+          { value: "chinese",    label: "Chinese"    },
+          { value: "japanese",   label: "Japanese"   },
+          { value: "korean",     label: "Korean"     },
+          { value: "arabic",     label: "Arabic"     },
+          { value: "russian",    label: "Russian"    },
+          { value: "hindi",      label: "Hindi"      },
+        ],
+      },
+      {
+        key: "source_language",
+        label: "Source Language",
+        type: "select",
+        required: false,
+        defaultValue: "auto",
+        options: [
+          { value: "auto", label: "Auto-detect" },
+          { value: "en",   label: "English"  },
+          { value: "fr",   label: "French"   },
+          { value: "es",   label: "Spanish"  },
+          { value: "de",   label: "German"   },
+          { value: "zh",   label: "Chinese"  },
+          { value: "ja",   label: "Japanese" },
+          { value: "ar",   label: "Arabic"   },
+          { value: "pt",   label: "Portuguese"},
+          { value: "ru",   label: "Russian"  },
+          { value: "hi",   label: "Hindi"    },
+        ],
+      },
+      {
+        key: "model",
+        label: "Model",
+        type: "select",
+        required: false,
+        defaultValue: "gpt-3.5-turbo",
+        options: MODELS,
+      },
+    ],
+  },
+
+  "content-generation": {
+    description: "Generates structured content (blog posts, emails, social posts…) on a given topic.",
+    fields: [
+      {
+        key: "topic",
+        label: "Topic",
+        type: "textarea",
+        required: true,
+        placeholder: "Benefits of using {{product}} for remote teams",
+        supportsTemplate: true,
+        rows: 3,
+      },
+      {
+        key: "content_type",
+        label: "Content Type",
+        type: "select",
+        required: false,
+        defaultValue: "blog_post",
+        options: [
+          { value: "blog_post",           label: "Blog Post"           },
+          { value: "email",               label: "Email"               },
+          { value: "social_media",        label: "Social Media Post"   },
+          { value: "article",             label: "Article"             },
+          { value: "product_description", label: "Product Description" },
+          { value: "press_release",       label: "Press Release"       },
+        ],
+      },
+      {
+        key: "style",
+        label: "Writing Style",
+        type: "select",
+        required: false,
+        defaultValue: "professional",
+        options: [
+          { value: "professional", label: "Professional" },
+          { value: "informative",  label: "Informative"  },
+          { value: "creative",     label: "Creative"     },
+          { value: "casual",       label: "Casual"       },
+          { value: "formal",       label: "Formal"       },
+          { value: "humorous",     label: "Humorous"     },
+        ],
+      },
+      {
+        key: "length",
+        label: "Length",
+        type: "select",
+        required: false,
+        defaultValue: "medium",
+        options: [
+          { value: "short",  label: "Short (~150 words)"  },
+          { value: "medium", label: "Medium (~400 words)" },
+          { value: "long",   label: "Long (~800 words)"   },
+        ],
+      },
+      {
+        key: "model",
+        label: "Model",
+        type: "select",
+        required: false,
+        defaultValue: "gpt-3.5-turbo",
+        options: MODELS,
+      },
+    ],
+  },
+
+  "search-agent": {
+    description: "Searches the web for information and returns an AI-synthesised answer with source links.",
+    fields: [
+      {
+        key: "query",
+        label: "Search Query",
+        type: "textarea",
+        required: true,
+        placeholder: "Latest news about {{topic}}",
+        hint: "What to search for. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 2,
+      },
+      {
+        key: "max_results",
+        label: "Max Results",
+        type: "number",
+        required: false,
+        defaultValue: 3,
+        min: 1,
+        max: 10,
+        hint: "Number of web results to fetch and synthesise (1–10).",
+      },
+    ],
+  },
+
+  "data-analyst-agent": {
+    description: "Runs a data analysis task and optionally generates a chart. Feed it a dataset or let it create sample data.",
+    fields: [
+      {
+        key: "analysis_request",
+        label: "Analysis Request",
+        type: "textarea",
+        required: true,
+        placeholder: "Analyse sales trends and highlight the top 3 performing months",
+        hint: "Describe what analysis to perform. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 3,
+      },
+      {
+        key: "dataset",
+        label: "Dataset (JSON, optional)",
+        type: "textarea",
+        required: false,
+        placeholder: '{ "Jan": 120, "Feb": 95, "Mar": 140 }',
+        hint: "JSON data to analyse. If omitted, the agent generates sample data.",
+        rows: 4,
+      },
+      {
+        key: "create_visualization",
+        label: "Generate Chart",
+        type: "boolean",
+        required: false,
+        defaultValue: true,
+        hint: "If enabled, the agent returns a base64 chart image.",
+      },
+    ],
+  },
+
+  /* ─── Gmail ─────────────────────────────────────────────────── */
+  gmailSearch: {
+    description: "Searches your Gmail inbox using Gmail search syntax. Requires Google authentication.",
+    requiresGoogle: true,
+    fields: [
+      {
+        key: "query",
+        label: "Gmail Search Query",
+        type: "text",
+        required: false,
+        defaultValue: "is:unread",
+        placeholder: "is:unread from:boss@company.com",
+        hint: "Gmail search operators: is:unread, from:, subject:, after:, etc.",
+        supportsTemplate: true,
+      },
+      {
+        key: "maxResults",
+        label: "Max Results",
+        type: "number",
+        required: false,
+        defaultValue: 10,
+        min: 1,
+        max: 100,
+      },
+      {
+        key: "includeSpamTrash",
+        label: "Include Spam & Trash",
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+    ],
+  },
+
+  gmailSend: {
+    description: "Sends an email via Gmail. Requires Google authentication.",
+    requiresGoogle: true,
+    fields: [
+      {
+        key: "to",
+        label: "To",
+        type: "email",
+        required: true,
+        placeholder: "recipient@example.com or {{email}}",
+        supportsTemplate: true,
+      },
+      {
+        key: "subject",
+        label: "Subject",
+        type: "text",
+        required: true,
+        placeholder: "Re: Your order {{orderId}}",
+        supportsTemplate: true,
+      },
+      {
+        key: "body",
+        label: "Body",
+        type: "textarea",
+        required: true,
+        placeholder: "Hi {{name}},\n\nYour request has been processed.",
+        supportsTemplate: true,
+        rows: 5,
+      },
+      {
+        key: "cc",
+        label: "CC (optional)",
+        type: "text",
+        required: false,
+        placeholder: "manager@company.com, team@company.com",
+        supportsTemplate: true,
+      },
+      {
+        key: "bcc",
+        label: "BCC (optional)",
+        type: "text",
+        required: false,
+        placeholder: "archive@company.com",
+        supportsTemplate: true,
+      },
+    ],
+  },
+
+  gmailCreateDraft: {
+    description: "Creates a Gmail draft without sending it. Requires Google authentication.",
+    requiresGoogle: true,
+    fields: [
+      {
+        key: "to",
+        label: "To",
+        type: "email",
+        required: true,
+        placeholder: "recipient@example.com or {{email}}",
+        supportsTemplate: true,
+      },
+      {
+        key: "subject",
+        label: "Subject",
+        type: "text",
+        required: true,
+        placeholder: "Draft: {{topic}}",
+        supportsTemplate: true,
+      },
+      {
+        key: "body",
+        label: "Body",
+        type: "textarea",
+        required: true,
+        placeholder: "Draft content here…",
+        supportsTemplate: true,
+        rows: 5,
+      },
+      {
+        key: "cc",
+        label: "CC (optional)",
+        type: "text",
+        required: false,
+        supportsTemplate: true,
+      },
+      {
+        key: "contentType",
+        label: "Content Type",
+        type: "select",
+        required: false,
+        defaultValue: "text/plain",
+        options: [
+          { value: "text/plain", label: "Plain Text" },
+          { value: "text/html",  label: "HTML"       },
+        ],
+      },
+    ],
+  },
+
+  gmailReply: {
+    description: "Replies to an email thread. Auto-detects the message to reply to from upstream context.",
+    requiresGoogle: true,
+    fields: [
+      {
+        key: "replyBody",
+        label: "Reply Text",
+        type: "textarea",
+        required: true,
+        placeholder: "Thanks for your email! {{response}}",
+        supportsTemplate: true,
+        rows: 5,
+      },
+      {
+        key: "messageId",
+        label: "Message ID (optional)",
+        type: "text",
+        required: false,
+        placeholder: "Auto-detected from upstream gmailSearch",
+        hint: "Leave blank to auto-use the first message from a Gmail Search node.",
+        supportsTemplate: true,
+      },
+      {
+        key: "replyAll",
+        label: "Reply to All",
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+      {
+        key: "sendDraft",
+        label: "Send Immediately",
+        type: "boolean",
+        required: false,
+        defaultValue: true,
+        hint: "If off, saves as a draft instead of sending.",
+      },
+    ],
+  },
+
+  gmailMarkRead: {
+    description: "Marks one or more Gmail messages as read or unread.",
+    requiresGoogle: true,
+    fields: [
+      {
+        key: "messageIds",
+        label: "Message IDs (optional)",
+        type: "text",
+        required: false,
+        placeholder: "Auto-detected from upstream gmailSearch",
+        hint: "Comma-separated IDs. Leave blank to use messages from a Gmail Search node.",
+        supportsTemplate: true,
+      },
+      {
+        key: "markAsRead",
+        label: "Mark as Read",
+        type: "boolean",
+        required: false,
+        defaultValue: true,
+        hint: "Toggle off to mark as unread instead.",
+      },
+    ],
+  },
+
+  gmailAddLabel: {
+    description: "Adds or removes Gmail labels on one or more messages.",
+    requiresGoogle: true,
+    fields: [
+      {
+        key: "labelsToAdd",
+        label: "Labels to Add",
+        type: "text",
+        required: false,
+        placeholder: "IMPORTANT, MyLabel",
+        hint: "Comma-separated label names. Use exact Gmail label names.",
+        supportsTemplate: true,
+      },
+      {
+        key: "labelsToRemove",
+        label: "Labels to Remove",
+        type: "text",
+        required: false,
+        placeholder: "UNREAD",
+        supportsTemplate: true,
+      },
+      {
+        key: "messageIds",
+        label: "Message IDs (optional)",
+        type: "text",
+        required: false,
+        placeholder: "Auto-detected from upstream gmailSearch",
+        supportsTemplate: true,
+      },
+    ],
+  },
+
+  /* ─── Auth Nodes ───────────────────────────────────────────── */
+  "gemini-auth": {
+    description: "Stores your Google Gemini API key in Redis so downstream AI nodes can use it automatically.",
+    fields: [
+      {
+        key: "api_key",
+        label: "Gemini API Key",
+        type: "text",
+        required: true,
+        placeholder: "AIzaSy…",
+        hint: "Your Google AI Studio API key. It is stored securely in Redis for this execution.",
+      },
+    ],
+  },
+
+  "openai-auth": {
+    description: "Stores your OpenAI API key in Redis so downstream AI nodes can use it automatically.",
+    fields: [
+      {
+        key: "api_key",
+        label: "OpenAI API Key",
+        type: "text",
+        required: true,
+        placeholder: "sk-…",
+        hint: "Your OpenAI API key. Stored securely in Redis for this execution.",
+      },
+    ],
+  },
+
+  "claude-auth": {
+    description: "Stores your Anthropic Claude API key in Redis so downstream AI nodes can use it automatically.",
+    fields: [
+      {
+        key: "api_key",
+        label: "Claude API Key",
+        type: "text",
+        required: true,
+        placeholder: "sk-ant-…",
+        hint: "Your Anthropic API key. Stored securely in Redis for this execution.",
+      },
+    ],
+  },
+
+  /* ─── Competitive Programming Nodes ────────────────────────── */
+  "cp-solver": {
+    description: "Generates a Python solution to a competitive programming problem using an LLM.",
+    fields: [
+      {
+        key: "problem",
+        label: "Problem Statement",
+        type: "textarea",
+        required: true,
+        placeholder: "Given an array of integers, find the maximum subarray sum…",
+        hint: "Full problem description including constraints. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 6,
+      },
+    ],
+  },
+
+  "cp-testgen": {
+    description: "Generates test cases for a competitive programming problem using an LLM.",
+    fields: [
+      {
+        key: "problem",
+        label: "Problem Statement",
+        type: "textarea",
+        required: true,
+        placeholder: "Given an array of integers…",
+        hint: "Full problem description. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 6,
+      },
+      {
+        key: "num_tests",
+        label: "Number of Test Cases",
+        type: "number",
+        required: false,
+        defaultValue: 5,
+        min: 1,
+        max: 20,
+        hint: "How many test cases to generate (1–20).",
+      },
+    ],
+  },
+
+  "cp-executor": {
+    description: "Executes Python code against test cases and reports pass/fail results.",
+    fields: [
+      {
+        key: "code",
+        label: "Python Code",
+        type: "textarea",
+        required: true,
+        placeholder: "{{code}} — or paste your Python solution here",
+        hint: "Python code that reads from stdin and writes to stdout. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 6,
+      },
+      {
+        key: "testcases",
+        label: "Test Cases (JSON)",
+        type: "textarea",
+        required: false,
+        placeholder: '{{testcases}} — or: [{"input":"5\\n1 2 3 4 5","output":"15"}]',
+        hint: "JSON array of {input, output} objects. Can be piped from cp-testgen.",
+        supportsTemplate: true,
+        rows: 4,
+      },
+    ],
+  },
+
+  "cp-agent": {
+    description: "Full agentic CP pipeline: generates test cases, writes a solution, and iterates until all tests pass.",
+    fields: [
+      {
+        key: "problem",
+        label: "Problem Statement",
+        type: "textarea",
+        required: true,
+        placeholder: "Given an array of integers, find the maximum subarray sum…",
+        hint: "Full problem description. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 6,
+      },
+      {
+        key: "max_iterations",
+        label: "Max Fix Iterations",
+        type: "number",
+        required: false,
+        defaultValue: 3,
+        min: 1,
+        max: 10,
+        hint: "How many times the agent re-tries fixing failing code (1–10).",
+      },
+    ],
+  },
+
+  /* ─── Database Nodes ────────────────────────────────────────── */
+  "postgres-db": {
+    description: "Executes a SQL query against a PostgreSQL database and returns the results.",
+    fields: [
+      {
+        key: "host",
+        label: "Host",
+        type: "text",
+        required: true,
+        defaultValue: "localhost",
+        placeholder: "localhost or db.example.com",
+        supportsTemplate: true,
+      },
+      {
+        key: "port",
+        label: "Port",
+        type: "number",
+        required: false,
+        defaultValue: 5432,
+        min: 1,
+        max: 65535,
+      },
+      {
+        key: "database",
+        label: "Database Name",
+        type: "text",
+        required: true,
+        placeholder: "my_database",
+        supportsTemplate: true,
+      },
+      {
+        key: "username",
+        label: "Username",
+        type: "text",
+        required: true,
+        placeholder: "postgres",
+        supportsTemplate: true,
+      },
+      {
+        key: "password",
+        label: "Password",
+        type: "text",
+        required: true,
+        placeholder: "••••••••",
+      },
+      {
+        key: "query",
+        label: "SQL Query",
+        type: "textarea",
+        required: true,
+        placeholder: "SELECT * FROM users WHERE id = {{userId}}",
+        hint: "SQL to execute. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 4,
+      },
+    ],
+  },
+
+  "mysql-db": {
+    description: "Executes a SQL query against a MySQL database and returns the results.",
+    fields: [
+      {
+        key: "host",
+        label: "Host",
+        type: "text",
+        required: true,
+        defaultValue: "localhost",
+        placeholder: "localhost or db.example.com",
+        supportsTemplate: true,
+      },
+      {
+        key: "port",
+        label: "Port",
+        type: "number",
+        required: false,
+        defaultValue: 3306,
+        min: 1,
+        max: 65535,
+      },
+      {
+        key: "database",
+        label: "Database Name",
+        type: "text",
+        required: true,
+        placeholder: "my_database",
+        supportsTemplate: true,
+      },
+      {
+        key: "username",
+        label: "Username",
+        type: "text",
+        required: true,
+        placeholder: "root",
+        supportsTemplate: true,
+      },
+      {
+        key: "password",
+        label: "Password",
+        type: "text",
+        required: true,
+        placeholder: "••••••••",
+      },
+      {
+        key: "query",
+        label: "SQL Query",
+        type: "textarea",
+        required: true,
+        placeholder: "SELECT * FROM orders WHERE status = '{{status}}'",
+        hint: "SQL to execute. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 4,
+      },
+    ],
+  },
+
+  "mongo-db": {
+    description: "Executes a MongoDB query and returns the matching documents.",
+    fields: [
+      {
+        key: "connection_string",
+        label: "Connection String",
+        type: "text",
+        required: true,
+        placeholder: "mongodb://localhost:27017 or {{mongoUri}}",
+        hint: "MongoDB connection URI. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+      },
+      {
+        key: "database",
+        label: "Database Name",
+        type: "text",
+        required: true,
+        placeholder: "my_database",
+        supportsTemplate: true,
+      },
+      {
+        key: "collection",
+        label: "Collection",
+        type: "text",
+        required: true,
+        placeholder: "users",
+        supportsTemplate: true,
+      },
+      {
+        key: "operation",
+        label: "Operation",
+        type: "select",
+        required: true,
+        defaultValue: "find",
+        options: [
+          { value: "find",         label: "Find (find)"                },
+          { value: "findOne",      label: "Find One (findOne)"         },
+          { value: "insertOne",    label: "Insert One (insertOne)"     },
+          { value: "updateOne",    label: "Update One (updateOne)"     },
+          { value: "deleteOne",    label: "Delete One (deleteOne)"     },
+          { value: "aggregate",    label: "Aggregate (aggregate)"      },
+        ],
+      },
+      {
+        key: "query",
+        label: "Query / Filter (JSON)",
+        type: "textarea",
+        required: false,
+        placeholder: '{ "status": "{{status}}", "age": { "$gte": 18 } }',
+        hint: "MongoDB filter document as JSON. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 3,
+      },
+      {
+        key: "document",
+        label: "Document / Update (JSON)",
+        type: "textarea",
+        required: false,
+        placeholder: '{ "$set": { "status": "{{newStatus}}" } }',
+        hint: "For insert/update operations. Supports {{variable}} substitution.",
+        supportsTemplate: true,
+        rows: 3,
+      },
+    ],
+  },
+
+  /* ─── Google Calendar ───────────────────────────────────────── */
+  googleCalendar: {
+    description: "Creates a Google Calendar event. Requires Google authentication.",
+    requiresGoogle: true,
+    fields: [
+      {
+        key: "summary",
+        label: "Event Title",
+        type: "text",
+        required: true,
+        placeholder: "Team Sync — {{projectName}}",
+        supportsTemplate: true,
+      },
+      {
+        key: "startTime",
+        label: "Start Time",
+        type: "text",
+        required: true,
+        placeholder: "27 June 2025, 10:00 AM",
+        hint: 'Format: "DD Month YYYY, H:MM AM/PM". Supports {{variable}} substitution.',
+        supportsTemplate: true,
+      },
+      {
+        key: "endTime",
+        label: "End Time",
+        type: "text",
+        required: true,
+        placeholder: "27 June 2025, 11:00 AM",
+        hint: "Same format as Start Time.",
+        supportsTemplate: true,
+      },
+      {
+        key: "description",
+        label: "Description (optional)",
+        type: "textarea",
+        required: false,
+        placeholder: "Agenda: {{agenda}}",
+        supportsTemplate: true,
+        rows: 3,
+      },
+      {
+        key: "location",
+        label: "Location (optional)",
+        type: "text",
+        required: false,
+        placeholder: "Conference Room B or https://meet.google.com/...",
+        supportsTemplate: true,
+      },
+      {
+        key: "attendees",
+        label: "Attendees (optional)",
+        type: "text",
+        required: false,
+        placeholder: "alice@co.com, bob@co.com",
+        hint: "Comma-separated email addresses.",
+        supportsTemplate: true,
+      },
+      {
+        key: "calendarId",
+        label: "Calendar ID",
+        type: "text",
+        required: false,
+        defaultValue: "primary",
+        hint: 'Use "primary" for your default calendar.',
+        supportsTemplate: true,
+      },
+    ],
+  },
+};
