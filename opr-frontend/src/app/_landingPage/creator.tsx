@@ -73,7 +73,7 @@ export default function Creator() {
           <div className="flex flex-col md:flex-row justify-between w-full py-4">
             <div className="text-foreground pt-2 md:pt-5">
               <div className="text-3xl sm:text-5xl font-bold py-2 sm:py-4">
-                MarcelPearl Creators
+                AutoWeave Creators
               </div>
               <div className="text-muted-foreground text-sm sm:text-base">
                 Our skills made this project come to live
