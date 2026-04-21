@@ -17,32 +17,32 @@ import { NodeTemplate, nodeTemplates, WorkflowNodeData } from '@/lib/mockdata';
 import WorkflowNode from './_components/wokrflowNode';
 import { useDragContext } from '@/provider/dragprovider';
 
-export type CustomNode = Node<WorkflowNodeData> 
+export type CustomNode = Node<WorkflowNodeData>
 
 const nodeTypes = {
   workflowNode: WorkflowNode,
 };
 
 const WorkflowCanvas = () => {
-  const { 
-    useProject, 
-    nodes, 
-    setNodes, 
-    onEdgesChange, 
-    onNodesChange, 
-    edges, 
-    nodeIdCounter, 
-    setNodeIdCounter, 
-    isDragOver, 
-    setIsDragOver, 
-    dropPosition, 
-    setDropPosition, 
-    onConnect, 
+  const {
+    useProject,
+    nodes,
+    setNodes,
+    onEdgesChange,
+    onNodesChange,
+    edges,
+    nodeIdCounter,
+    setNodeIdCounter,
+    isDragOver,
+    setIsDragOver,
+    dropPosition,
+    setDropPosition,
+    onConnect,
     onNodesDelete,
     onSelectionChange,
     setSelectedNodes,
   } = useDragContext();
-  
+
   const project = useProject()
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
@@ -62,7 +62,7 @@ const WorkflowCanvas = () => {
     },
     [project]
   );
-  
+
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -148,22 +148,22 @@ const WorkflowCanvas = () => {
     },
     [screenToFlowPosition, nodeIdCounter, setNodes, nodes, setNodeIdCounter, setIsDragOver, setDropPosition]
   );
-const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
-  console.log('🔥 ReactFlow Selection changed:', params);
-  console.log('🔥 Selected node IDs:', params.nodes.map(n => n.id));
-  
-  if (onSelectionChange) {
-    onSelectionChange(params);
-  }
-  
-  if (setSelectedNodes) {
-    setSelectedNodes(params.nodes as Node<WorkflowNodeData>[]);
-  }
-}, [onSelectionChange, setSelectedNodes]);
+  const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
+    console.log('🔥 ReactFlow Selection changed:', params);
+    console.log('🔥 Selected node IDs:', params.nodes.map(n => n.id));
+
+    if (onSelectionChange) {
+      onSelectionChange(params);
+    }
+
+    if (setSelectedNodes) {
+      setSelectedNodes(params.nodes as Node<WorkflowNodeData>[]);
+    }
+  }, [onSelectionChange, setSelectedNodes]);
   return (
     <div className="h-screen w-full relative bg-black">
-      <div 
-        className="w-full h-full" 
+      <div
+        className="w-full h-full"
         ref={reactFlowWrapper}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
@@ -214,7 +214,7 @@ const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
             }}
           />
         </ReactFlow>
-        
+
         {isDragOver && (
           <div className="absolute inset-0 bg-cyan-400/10 border-4 border-dashed border-cyan-400 pointer-events-none z-10">
             <div className="absolute inset-0 flex items-center justify-center">
@@ -223,7 +223,7 @@ const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
               </div>
             </div>
             {dropPosition && (
-              <div 
+              <div
                 className="absolute w-6 h-6 bg-cyan-400 animate-pulse shadow-lg shadow-cyan-400/50"
                 style={{
                   left: dropPosition.x - 12,
@@ -242,9 +242,9 @@ const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
                 <div className="text-2xl font-semibold text-white">
                   Start Building Your Workflow
                 </div>
-                <div className="text-white/60 max-w-md mx-auto leading-relaxed">
-                  Add nodes from the palette to create powerful automated workflows. 
-                  Connect them together to build complex logic flows.
+                <div className="text-white/50 max-w-md mx-auto leading-relaxed font-medium">
+                  Drag and drop nodes from the palette to construct powerful, automated workflows.
+                  Connect logic blocks to unleash your creativity.
                 </div>
               </div>
             </div>

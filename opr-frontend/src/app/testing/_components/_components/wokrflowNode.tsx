@@ -15,35 +15,35 @@ type IconComp = React.ElementType;
 
 function getNodeIcon(nodeType: string): IconComp {
   const map: Record<string, IconComp> = {
-    start:               PlayCircle,
-    trigger:             Zap,
-    condition:           GitBranch,
-    transform:           RefreshCw,
-    delay:               Clock,
-    httpGet:             Globe,
-    httpPost:            Upload,
-    httpPut:             Wrench,
-    httpDelete:          Trash2,
-    "text-generation":   Bot,
-    summarization:       FileText,
-    "ai-decision":       Cpu,
-    "question-answer":   MessageCircle,
+    start: PlayCircle,
+    trigger: Zap,
+    condition: GitBranch,
+    transform: RefreshCw,
+    delay: Clock,
+    httpGet: Globe,
+    httpPost: Upload,
+    httpPut: Wrench,
+    httpDelete: Trash2,
+    "text-generation": Bot,
+    summarization: FileText,
+    "ai-decision": Cpu,
+    "question-answer": MessageCircle,
     "text-classification": Tag,
-    "named-entity":      Bookmark,
-    translation:         Globe,
+    "named-entity": Bookmark,
+    translation: Globe,
     "content-generation": PenLine,
-    "search-agent":      Search,
+    "search-agent": Search,
     "data-analyst-agent": BarChart2,
-    googleCalendar:      Calendar,
-    calculator:          Calculator,
-    currentTime:         Clock,
-    gmailSend:           Mail,
-    gmailSearch:         Search,
-    gmailMarkRead:       Eye,
-    gmailAddLabel:       Tag,
-    gmailCreateDraft:    FileEdit,
-    gmailReply:          Reply,
-    action:              Mail,
+    googleCalendar: Calendar,
+    calculator: Calculator,
+    currentTime: Clock,
+    gmailSend: Mail,
+    gmailSearch: Search,
+    gmailMarkRead: Eye,
+    gmailAddLabel: Tag,
+    gmailCreateDraft: FileEdit,
+    gmailReply: Reply,
+    action: Mail,
   };
   return map[nodeType] || Zap;
 }
@@ -55,13 +55,13 @@ function getNodeStyle(nodeType: string): NS {
     return { color: "#06b6d4", bg: "rgba(6,182,212,0.1)", border: "rgba(6,182,212,0.28)", badge: "Trigger" };
   if (["condition"].includes(nodeType))
     return { color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.28)", badge: "Logic" };
-  if (["text-generation","summarization","ai-decision","question-answer","text-classification","named-entity","translation","content-generation","search-agent","data-analyst-agent"].includes(nodeType))
+  if (["text-generation", "summarization", "ai-decision", "question-answer", "text-classification", "named-entity", "translation", "content-generation", "search-agent", "data-analyst-agent"].includes(nodeType))
     return { color: "#a78bfa", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.28)", badge: "AI" };
   if (nodeType.startsWith("gmail"))
     return { color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.28)", badge: "Gmail" };
-  if (["delay","transform","calculator","currentTime"].includes(nodeType))
+  if (["delay", "transform", "calculator", "currentTime"].includes(nodeType))
     return { color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.28)", badge: "Utility" };
-  if (["httpGet","httpPost","httpPut","httpDelete"].includes(nodeType))
+  if (["httpGet", "httpPost", "httpPut", "httpDelete"].includes(nodeType))
     return { color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.28)", badge: "HTTP" };
   if (["googleCalendar"].includes(nodeType))
     return { color: "#60a5fa", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.28)", badge: "Google" };
@@ -69,11 +69,11 @@ function getNodeStyle(nodeType: string): NS {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  string:  "#06b6d4",
-  number:  "#f59e0b",
+  string: "#06b6d4",
+  number: "#f59e0b",
   boolean: "#34d399",
-  object:  "#a78bfa",
-  array:   "#fb923c",
+  object: "#a78bfa",
+  array: "#fb923c",
 };
 
 function ReturnVarPill({ varKey, label, type, nodeStyle }: {
@@ -104,8 +104,8 @@ function ReturnVarPill({ varKey, label, type, nodeStyle }: {
         background: flashing
           ? `${nodeStyle.color}28`
           : isAdded
-          ? `${nodeStyle.color}15`
-          : "rgba(255,255,255,0.04)",
+            ? `${nodeStyle.color}15`
+            : "rgba(255,255,255,0.04)",
         border: `1px solid ${isAdded ? nodeStyle.color + "60" : "rgba(255,255,255,0.08)"}`,
         boxShadow: flashing ? `0 0 8px ${nodeStyle.color}55` : "none",
       }}
@@ -306,11 +306,10 @@ export default function WorkflowNode({
           {returnVars.length > 0 && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowReturnVars(!showReturnVars); }}
-              className={`p-1.5 rounded-lg transition-colors ${
-                showReturnVars
+              className={`p-1.5 rounded-lg transition-colors ${showReturnVars
                   ? "text-white/80 bg-white/10"
                   : "text-white/25 hover:text-white/55 hover:bg-white/5"
-              }`}
+                }`}
               title="Toggle return variables"
             >
               <Variable className="w-3 h-3" style={{ color: showReturnVars ? style.color : undefined }} />
@@ -318,11 +317,10 @@ export default function WorkflowNode({
           )}
           <button
             onClick={(e) => { e.stopPropagation(); setShowConfig(!showConfig); }}
-            className={`p-1.5 rounded-lg transition-colors ${
-              showConfig
+            className={`p-1.5 rounded-lg transition-colors ${showConfig
                 ? "text-white/70 bg-white/8"
                 : "text-white/25 hover:text-white/55 hover:bg-white/5"
-            }`}
+              }`}
             title="Toggle config"
           >
             <Settings className="w-3 h-3" />

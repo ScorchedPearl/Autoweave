@@ -63,6 +63,46 @@ export default function Creator() {
       ],
       imageUrl: "vishwasfinal.png",
     },
+    {
+      name: "Ayushi Jaseja",
+      email: "ajseja7@gmail.com",
+      linkdin: "https://linkedin.com/in/ayushi-jaseja",
+      github: "https://github.com/ayushijaseja",
+      about:
+        "Full Stack Developer. Experienced in creating beautiful and scalable web applications.",
+      techUsed: [
+        { icon: SiTypescript, name: "TypeScript" },
+        { icon: SiNextdotjs, name: "Next.js" },
+        { icon: FaCloud, name: "Cloud" },
+      ],
+      imageUrl: "ayushi.png",
+    },
+    {
+      name: "Vadik Kathal",
+      email: "john@example.com",
+      linkdin: "https://linkedin.com/in/johndoe",
+      github: "https://github.com/johndoe",
+      about:
+        "Software Engineer with a passion for learning new technologies.",
+      techUsed: [
+        { icon: FaJava, name: "Java" },
+        { icon: SiDocker, name: "Docker" },
+      ],
+      imageUrl: "vaidik.png",
+    },
+    {
+      name: "Suvanwita Das",
+      email: "jane@example.com",
+      linkdin: "https://linkedin.com/in/janesmith",
+      github: "https://github.com/janesmith",
+      about:
+        "Frontend Developer specializing in React and modern UI/UX design.",
+      techUsed: [
+        { icon: SiTypescript, name: "TypeScript" },
+        { icon: SiNextdotjs, name: "Next.js" },
+      ],
+      imageUrl: "suvanwita.png",
+    },
   ];
 
   function handleNext() {
