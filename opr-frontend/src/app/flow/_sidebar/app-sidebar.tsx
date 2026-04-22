@@ -51,11 +51,11 @@ function getOwnerIdFromJwt(): string | null {
 }
 
 const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
-  string:  { bg: "rgba(6,182,212,0.15)",   text: "#06b6d4" },
-  number:  { bg: "rgba(245,158,11,0.15)",  text: "#f59e0b" },
-  boolean: { bg: "rgba(52,211,153,0.15)",  text: "#34d399" },
-  object:  { bg: "rgba(167,139,250,0.15)", text: "#a78bfa" },
-  array:   { bg: "rgba(251,146,60,0.15)",  text: "#fb923c" },
+  string: { bg: "rgba(6,182,212,0.15)", text: "#06b6d4" },
+  number: { bg: "rgba(245,158,11,0.15)", text: "#f59e0b" },
+  boolean: { bg: "rgba(52,211,153,0.15)", text: "#34d399" },
+  object: { bg: "rgba(167,139,250,0.15)", text: "#a78bfa" },
+  array: { bg: "rgba(251,146,60,0.15)", text: "#fb923c" },
 };
 
 function CopyableTag({ tag, onRemove }: { tag: { id: string; text: string }; onRemove: (id: string) => void }) {
@@ -186,7 +186,7 @@ function ReturnVariablesBrowser({
             </div>
             <div className="text-center">
               <p className="text-sm text-white/50 font-medium">No nodes on canvas</p>
-              <p className="text-[11px] text-white/30 mt-1">Add nodes to the workflow<br/>to see their return variables here</p>
+              <p className="text-[11px] text-white/30 mt-1">Add nodes to the workflow<br />to see their return variables here</p>
             </div>
           </div>
         ) : (
@@ -205,7 +205,7 @@ function ReturnVariablesBrowser({
                     style={{ background: "rgba(255,255,255,0.03)" }}
                   >
                     <span className="text-base flex-shrink-0">
-                  
+
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-semibold text-white/80 truncate">{item.nodeLabel}</p>
@@ -267,7 +267,7 @@ function ReturnVariablesBrowser({
   );
 }
 
-const COLLAPSE_THRESHOLD = 300; 
+const COLLAPSE_THRESHOLD = 300;
 
 function ResultEntry({ entryKey, value }: { entryKey: string; value: any }) {
   const [expanded, setExpanded] = useState(false);
@@ -380,15 +380,15 @@ function WorkflowResultBrowser({
 
       <div className="relative flex-1 overflow-y-auto p-3 space-y-2">
         {entries.length === 0 ? (
-           <div className="flex flex-col items-center justify-center h-full gap-3 py-12 px-6">
-             <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-               <Variable className="w-5 h-5 text-white/20" />
-             </div>
-             <div className="text-center">
-               <p className="text-sm text-white/50 font-medium">No results found</p>
-               <p className="text-[11px] text-white/30 mt-1">Run workflow to see returns</p>
-             </div>
-           </div>
+          <div className="flex flex-col items-center justify-center h-full gap-3 py-12 px-6">
+            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+              <Variable className="w-5 h-5 text-white/20" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-white/50 font-medium">No results found</p>
+              <p className="text-[11px] text-white/30 mt-1">Run workflow to see returns</p>
+            </div>
+          </div>
         ) : (
           entries.map(([key, value]) => (
             <ResultEntry key={key} entryKey={key} value={value} />
@@ -632,7 +632,6 @@ export function AppSidebar() {
   const [lastExecution, setLastExecution] = useState<{
     executionId: string;
     workflowId: string;
-    ownerId: string;
   } | null>(null);
 
   useEffect(() => {
@@ -731,11 +730,10 @@ export function AppSidebar() {
 
                   <Button
                     disabled={!workflowId}
-                    className={`w-full justify-center rounded-xl transition-all duration-300 transform font-semibold ${
-                      workflowId
+                    className={`w-full justify-center rounded-xl transition-all duration-300 transform font-semibold ${workflowId
                         ? "bg-cyan-500 text-black hover:bg-cyan-400 hover:scale-[1.03] shadow-lg shadow-cyan-500/25"
                         : "bg-white/5 text-white/30 cursor-not-allowed border border-white/10"
-                    }`}
+                      }`}
                     onClick={async () => {
                       if (!workflowId) return;
                       const fullWorkflow = getWorkflowExecutionData();
@@ -751,7 +749,7 @@ export function AppSidebar() {
                         const execId = response?.executionId;
                         const ownerId = getOwnerIdFromJwt();
                         if (execId && ownerId) {
-                          setLastExecution({ executionId: execId, workflowId, ownerId });
+                          setLastExecution({ executionId: execId, workflowId });
                         }
                       } catch (error) {
                         console.error("Failed to run workflow:", error);
@@ -787,7 +785,7 @@ export function AppSidebar() {
                         const execId = response?.executionId;
                         const ownerId = getOwnerIdFromJwt();
                         if (execId && tempId && ownerId) {
-                          setLastExecution({ executionId: execId, workflowId: tempId, ownerId });
+                          setLastExecution({ executionId: execId, workflowId: tempId });
                         }
                       } catch (error) {
                         console.error("Failed quick run:", error);
@@ -822,7 +820,6 @@ export function AppSidebar() {
                       <PerformancePanelButton
                         executionId={lastExecution.executionId}
                         workflowId={lastExecution.workflowId}
-                        ownerId={lastExecution.ownerId}
                         apiBase={process.env.NEXT_PUBLIC_BACKEND_URL ?? ""}
                       />
                     </div>

@@ -11,14 +11,11 @@ import { SagaTransactionMonitor } from "@/components/SagaTransactionMonitor";
 interface PerformancePanelProps {
   executionId: string;
   workflowId: string;
-  ownerId: string;
   onClose?: () => void;
   apiBase?: string;
 }
 
 type ActiveTab = "btree" | "saga";
-
-// ─── Tab Button ───────────────────────────────────────────────────────────────
 
 function TabButton({
   id,
@@ -81,7 +78,6 @@ function TabButton({
 export function PerformancePanel({
   executionId,
   workflowId,
-  ownerId,
   onClose,
   apiBase = "",
 }: PerformancePanelProps) {
@@ -156,7 +152,6 @@ export function PerformancePanel({
               <BTreeExplorerPanel
                 executionId={executionId}
                 workflowId={workflowId}
-                ownerId={ownerId}
                 apiBase={apiBase}
               />
             </motion.div>
@@ -191,7 +186,6 @@ export function PerformancePanel({
 export function PerformancePanelButton({
   executionId,
   workflowId,
-  ownerId,
   apiBase,
 }: Omit<PerformancePanelProps, "onClose">) {
   const [open, setOpen] = useState(false);
@@ -236,7 +230,6 @@ export function PerformancePanelButton({
               <PerformancePanel
                 executionId={executionId}
                 workflowId={workflowId}
-                ownerId={ownerId}
                 onClose={() => setOpen(false)}
                 apiBase={apiBase}
               />
