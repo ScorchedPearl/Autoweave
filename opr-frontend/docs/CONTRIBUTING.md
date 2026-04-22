@@ -1,5 +1,126 @@
 ## Contributing — OPR Frontend
 
+Welcome! This guide covers contribution workflows, code style, ESLint, TypeScript best practices, testing, PR process, and release guidance.
+
+Table of contents
+- Getting started
+- Code style & formatter
+- ESLint & important rules
+- TypeScript best practices
+- Testing strategy
+- Pull request & review process
+- Branching, releases, and tagging
+- Security reporting & responsible disclosure
+
+Getting started
+- Fork the repo, create a local branch `git checkout -b feat/my-feature`.
+- Rebase frequently off `main` and keep PRs small and focused.
+
+Code style & formatter
+- Prettier is configured at the repo root. Run `pnpm format` before committing.
+- Tailwind classes: rely on `prettier-plugin-tailwindcss` to order utilities consistently.
+- Commit hooks: `husky` may be used to run lint/format checks locally.
+
+ESLint & important rules
+- Run `pnpm lint` to run full lint suite.
+- Key rules enforced:
+  - `no-unused-vars` — remove unused imports and variables.
+  - `@typescript-eslint/no-explicit-any` — minimize use of `any`.
+  - `react/jsx-key` — ensure list items have keys.
+  - Accessibility rules: prefer `jsx-a11y` recommendations.
+
+Example `.eslintrc` highlights
+
+```json
+{
+  "extends": ["eslint:recommended", "plugin:react/recommended", "plugin:@typescript-eslint/recommended"],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "react/react-in-jsx-scope": "off"
+  }
+}
+```
+
+TypeScript best practices
+- Enable `strict` mode in `tsconfig.json` when possible. Prefer `unknown` over `any` and narrow types explicitly.
+- Export Props interfaces: `export interface HeaderProps { ... }`.
+- Use discriminated unions for action types in reducers and node types.
+- Keep side-effects in hooks; presentational components should be pure.
+
+Example patterns
+
+Reducers
+
+```ts
+type Action = { type: 'update'; payload: Node } | { type: 'delete'; id: string };
+function reducer(state: State, action: Action) { switch(action.type) { ... } }
+```
+
+Testing strategy (detailed)
+- Unit tests: React Testing Library + Jest
+  - Components: render shallow components and assert on DOM
+  - Utils: pure functions should have fast unit tests
+- Integration tests: `msw` to mock backend for hooks and contexts
+- E2E tests: Playwright for full flows (auth, save/run/observe)
+
+Test commands
+
+```bash
+pnpm test
+pnpm test:watch
+```
+
+Pull request & review process
+- PR title: use conventional commit prefix and short description, e.g., `feat(editor): add node inspector`.
+- PR body checklist: summary, design, screenshots (if UI), tests added, migration notes (if needed), risk assessment.
+- Required checks: lint and unit tests passing; run smoke tests if relevant.
+
+Review checklist for reviewers
+- Run examples locally and verify new flows.
+- Check for accessibility regressions.
+- Ensure that performance considerations are addressed (lazy-load heavy deps for landing pages).
+
+Branching & release model
+- Use short-lived feature branches. Rebase on main and avoid long-lived branches.
+- Releases: tag `vX.Y.Z` on `main` and let CI build/publish artifacts.
+
+PR template (example)
+
+```
+Title: feat(scope): short description
+
+Summary:
+- What changed?
+
+Files changed:
+- list
+
+Testing:
+- unit tests, integration, e2e
+
+Notes:
+- migration steps
+
+```
+
+Commit message examples
+- `feat(workflow): add llm node type`
+- `fix(api): handle 401 refresh loop`
+
+Security reporting
+- For vulnerabilities or secrets accidentally committed, contact security team and follow responsible disclosure. Do not post sensitive info in PRs or issue trackers.
+
+Onboarding & docs
+- Add README snippets for complex features and add minimal diagrams for workflow semantics in `docs/`.
+
+Contribution etiquette
+- Be respectful in code review. Provide constructive feedback and ask clarifying questions.
+
+---
+
+Document created: `opr-frontend/docs/CONTRIBUTING.md`
+## Contributing — OPR Frontend
+
 Welcome! This document explains how to contribute to the frontend: code style, ESLint setup, TypeScript best practices, testing, and the PR process.
 
 Getting started
