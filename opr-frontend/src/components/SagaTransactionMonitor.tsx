@@ -177,8 +177,10 @@ export function SagaTransactionMonitor({
   const [data, setData] = useState<SagaStatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [simulatingFailure, setSimulatingFailure] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const consecutiveErrors = useRef(0);
 
   const isCompensating =
     data?.sagaState === "COMPENSATING" || data?.sagaState === "COMPENSATED";
@@ -188,12 +190,23 @@ export function SagaTransactionMonitor({
   const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch(`${apiBase}/api/v1/saga/execution/${executionId}/status`);
-      if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
-      if (res.status === 404) return; // Saga not yet started
+      if (res.status === 404) {
+        setNotFound(true);
+        setLoading(false);
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setData(await res.json());
       setError(null);
+      consecutiveErrors.current = 0;
     } catch (e: any) {
-      setError(e.message);
+      consecutiveErrors.current += 1;
+      // Stop polling after 3 network failures (e.g. CORS, server down)
+      if (consecutiveErrors.current >= 3) {
+        setError(`Network error: ${e.message}. Polling stopped. Is the backend running?`);
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+      }
     } finally {
       setLoading(false);
     }
@@ -308,11 +321,30 @@ export function SagaTransactionMonitor({
           </div>
         )}
 
-        {!data && !loading && !error && (
+        {notFound && (
+          <div className="flex flex-col items-center justify-center py-16 gap-4 text-slate-500 px-6">
+            <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700">
+              <Activity size={28} className="opacity-30 mx-auto" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-slate-400">Saga not started for this execution</p>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                The Saga infrastructure is built and ready.<br />
+                It activates once <code className="text-violet-400">SagaCoordinatorService.startSaga()</code><br />
+                is wired into <code className="text-violet-400">DistributedWorkflowCoordinator</code>.
+              </p>
+            </div>
+            <div className="text-[10px] font-mono bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-500 w-full">
+              <div className="text-slate-600 mb-1">// Add to startWorkflowExecution():</div>
+              <div className="text-violet-400">sagaCoordinator.startSaga(executionId, workflowId);</div>
+            </div>
+          </div>
+        )}
+
+        {!data && !loading && !error && !notFound && (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-500">
             <Database size={32} className="opacity-30" />
-            <p className="text-sm">No saga found for this execution.</p>
-            <p className="text-xs">Saga is created when a workflow run begins.</p>
+            <p className="text-sm">Connecting to Saga Monitor…</p>
           </div>
         )}
 

@@ -41,7 +41,6 @@ interface BTreeNode {
 interface Props {
   executionId: string;
   workflowId: string;
-  ownerId: string;
   apiBase?: string;
 }
 
@@ -205,36 +204,50 @@ function StatCard({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function BTreeExplorerPanel({ executionId, workflowId, ownerId, apiBase = "" }: Props) {
+export function BTreeExplorerPanel({ executionId, workflowId, apiBase = "" }: Props) {
   const [data, setData] = useState<ExplainResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRawJson, setShowRawJson] = useState(false);
   const [activeTab, setActiveTab] = useState<"tree" | "complexity" | "narrative">("tree");
 
-  const fetchExplain = useCallback(async (force = false) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const url = force
-        ? `${apiBase}/api/v1/performance/explain/${executionId}?workflowId=${workflowId}&ownerId=${ownerId}`
-        : `${apiBase}/api/v1/performance/explain/${executionId}`;
 
-      const method = force ? "POST" : "GET";
-      const res = await fetch(url, { method });
+const fetchExplain = useCallback(async (force = false) => {
+  setLoading(true);
+  setError(null);
+  try {
+    const token = localStorage.getItem('__Pearl_Token'); 
+    
+    const url = force
+      ? `${apiBase}/api/v1/performance/explain/${executionId}?workflowId=${workflowId}`
+      : `${apiBase}/api/v1/performance/explain/${executionId}`;
 
-      if (res.status === 404 && !force) {
-        // Auto-trigger on first load
-        return fetchExplain(true);
+    const method = force ? "POST" : "GET";
+    
+    const res = await fetch(url, { 
+      method,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setData(await res.json());
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      throw new Error("Session expired. Please log in again.");
     }
-  }, [executionId, workflowId, ownerId, apiBase]);
+    
+    if (res.status === 404 && !force) {
+      return fetchExplain(true);
+    }
+    
+    if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+    setData(await res.json());
+  } catch (e: any) {
+    setError(e.message);
+  } finally {
+    setLoading(false);
+  }
+}, [executionId, workflowId, apiBase]);
 
   useEffect(() => { fetchExplain(); }, [fetchExplain]);
 
