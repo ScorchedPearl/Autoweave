@@ -1,61 +1,10 @@
 "use client";
 import { motion, useInView } from "framer-motion";
-import { Bot, Workflow, Zap, Shield, Globe, Puzzle, TrendingUp, Clock, Users } from "lucide-react";
 import { useRef } from "react";
+import { featuresData, statsData } from "../../constants/landing";
 
-const features = [
-  {
-    icon: Bot,
-    title: "Autonomous Agents",
-    description: "Deploy AI agents that operate independently, making intelligent decisions and executing complex workflows without human intervention.",
-    color: "#a78bfa",
-    delay: 0,
-  },
-  {
-    icon: Workflow,
-    title: "Visual Builder",
-    description: "Intuitive drag-and-drop interface that transforms complex logic into simple visual workflows. No programming experience required.",
-    color: "#06b6d4",
-    delay: 0.05,
-  },
-  {
-    icon: Zap,
-    title: "Real-time Execution",
-    description: "Lightning-fast processing with real-time monitoring and instant feedback. Scale from prototype to production seamlessly.",
-    color: "#f59e0b",
-    delay: 0.1,
-  },
-  {
-    icon: Shield,
-    title: "Enterprise Security",
-    description: "Bank-grade security with end-to-end encryption, SOC 2 compliance, and comprehensive audit trails for enterprise peace of mind.",
-    color: "#22c55e",
-    delay: 0.15,
-  },
-  {
-    icon: Globe,
-    title: "Universal Integrations",
-    description: "Connect with 1000+ services and APIs. From databases to SaaS platforms, integrate everything in your tech stack.",
-    color: "#06b6d4",
-    delay: 0.2,
-  },
-  {
-    icon: Puzzle,
-    title: "Adaptive Intelligence",
-    description: "Self-improving workflows that learn from patterns, optimize performance, and adapt to changing business requirements.",
-    color: "#a78bfa",
-    delay: 0.25,
-  },
-];
 
-const stats = [
-  { icon: TrendingUp, value: "2,400+", label: "Workflows built", color: "#06b6d4" },
-  { icon: Clock, value: "1.8s", label: "Avg execution time", color: "#a78bfa" },
-  { icon: Users, value: "500+", label: "Teams using AutoWeave", color: "#22c55e" },
-  { icon: Zap, value: "99.9%", label: "Platform uptime", color: "#f59e0b" },
-];
-
-const FeatureCard = ({ feature, index }: { feature: typeof features[0]; index: number }) => {
+const FeatureCard = ({ feature, index }: { feature: typeof featuresData[0]; index: number }) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
 
@@ -93,7 +42,7 @@ const FeatureCard = ({ feature, index }: { feature: typeof features[0]; index: n
   );
 };
 
-const StatCard = ({ stat, index }: { stat: typeof stats[0]; index: number }) => {
+const StatCard = ({ stat, index }: { stat: typeof statsData[0]; index: number }) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
 
@@ -162,14 +111,14 @@ const Features = () => {
 
         {/* Feature grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-20">
-          {features.map((feature, i) => (
+          {featuresData.map((feature, i) => (
             <FeatureCard key={i} feature={feature} index={i} />
           ))}
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, i) => (
+          {statsData.map((stat, i) => (
             <StatCard key={i} stat={stat} index={i} />
           ))}
         </div>

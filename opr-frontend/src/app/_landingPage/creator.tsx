@@ -1,17 +1,6 @@
 import { ArrowLeft, ArrowRight, Github, Linkedin, Mail } from "lucide-react";
 import { useState } from "react";
-import { FaCloud, FaCogs, FaJava } from "react-icons/fa";
-import { MdApi } from "react-icons/md";
-import { SiFastapi, SiLangchain } from "react-icons/si";
-import {
-  SiDocker,
-  SiGit,
-  SiGraphql,
-  SiNextdotjs,
-  SiPostgresql,
-  SiSpringboot,
-  SiTypescript,
-} from "react-icons/si";
+import { creatorData as creator } from "../../constants/landing";
 import Image from "next/image";
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,90 +9,7 @@ export default function Creator() {
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
 
-  const creator = [
-    {
-      name: "Saumya",
-      email: "saumyasood27@gmail.com",
-      linkdin: "https://www.linkedin.com/in/saumya-sood-875837332/",
-      github: "https://github.com/Marcella2706",
-      about:
-        "Full Stack Developer with expertise in both TypeScript and Java. Proficient in building scalable web applications using Next.js for frontend and Spring Boot for backend. Experienced in designing robust APIs with GraphQL and integrating modern technologies across the stack.",
-      techUsed: [
-        { icon: FaJava, name: "Java" },
-        { icon: SiSpringboot, name: "Spring Boot" },
-        { icon: SiGraphql, name: "GraphQL" },
-        { icon: MdApi, name: "REST APIs" },
-        { icon: SiPostgresql, name: "PostgreSQL" },
-        { icon: SiTypescript, name: "TypeScript" },
-        { icon: SiNextdotjs, name: "Next.js" },
-        { icon: SiDocker, name: "Docker" },
-        { icon: FaCloud, name: "Cloud" },
-      ],
-      imageUrl: "finalSaumya.png",
-    },
-    {
-      name: "Vishwas",
-      email: "kaixoxerl@gmail.com",
-      linkdin: "https://www.linkedin.com/in/vishwas-pahwa-694928328/",
-      github: "https://github.com/ScorchedPearl",
-      about:
-        "Full Stack Developer skilled in TypeScript with experience building various projects such as PostPearl. Adept in both frontend and backend development, and highly proficient in DevOps practices including Docker, CI/CD, and cloud deployment.",
-      techUsed: [
-        { icon: SiTypescript, name: "TypeScript" },
-        { icon: SiNextdotjs, name: "Next.js" },
-        { icon: SiDocker, name: "Docker" },
-        { icon: FaCogs, name: "DevOps" },
-        { icon: FaCloud, name: "Cloud" },
-        { icon: SiGit, name: "Git" },
-        { icon: FaJava, name: "Java" },
-        { icon: SiGraphql, name: "GraphQL" },
-        { icon: SiFastapi, name: "FastAPI" },
-        {icon: SiLangchain , name: "LangChain"},
-        { icon: SiPostgresql, name: "PostgreSQL" },
-      ],
-      imageUrl: "vishwasfinal.png",
-    },
-    {
-      name: "Ayushi Jaseja",
-      email: "ajseja7@gmail.com",
-      linkdin: "https://linkedin.com/in/ayushi-jaseja",
-      github: "https://github.com/ayushijaseja",
-      about:
-        "Full Stack Developer. Experienced in creating beautiful and scalable web applications.",
-      techUsed: [
-        { icon: SiTypescript, name: "TypeScript" },
-        { icon: SiNextdotjs, name: "Next.js" },
-        { icon: FaCloud, name: "Cloud" },
-      ],
-      imageUrl: "ayushi.png",
-    },
-    {
-      name: "Vadik Kathal",
-      email: "john@example.com",
-      linkdin: "https://linkedin.com/in/johndoe",
-      github: "https://github.com/johndoe",
-      about:
-        "Software Engineer with a passion for learning new technologies.",
-      techUsed: [
-        { icon: FaJava, name: "Java" },
-        { icon: SiDocker, name: "Docker" },
-      ],
-      imageUrl: "vaidik.png",
-    },
-    {
-      name: "Suvanwita Das",
-      email: "jane@example.com",
-      linkdin: "https://linkedin.com/in/janesmith",
-      github: "https://github.com/janesmith",
-      about:
-        "Frontend Developer specializing in React and modern UI/UX design.",
-      techUsed: [
-        { icon: SiTypescript, name: "TypeScript" },
-        { icon: SiNextdotjs, name: "Next.js" },
-      ],
-      imageUrl: "suvanwita.png",
-    },
-  ];
+
 
   function handleNext() {
     setDirection("right");
