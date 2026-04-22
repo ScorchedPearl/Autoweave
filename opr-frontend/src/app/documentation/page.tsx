@@ -11,6 +11,9 @@ import WorkflowExecution from "./_components/WorkflowExecution";
 import AINodes from "./_components/AINodes";
 import TroubleshootingFAQ from "./_components/TroubleshootingFAQ";
 
+import Header from "../_landingPage/header";
+import Footer from "../_landingPage/footer";
+
 type TabType = 'getting-started' | 'drag-drop' | 'connections' | 'use-cases' | 'integrations' | 'execution' | 'ai-nodes' | 'faq';
 
 interface Tab {
@@ -76,6 +79,7 @@ export default function DocumentationPage() {
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
+        <Header/>
       {/* Background Effects */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
@@ -85,10 +89,10 @@ export default function DocumentationPage() {
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-cyan-300 mb-4 ">
             Autoweave Documentation
           </h1>
           <p className="text-lg text-muted-foreground max-w-3xl">
@@ -121,6 +125,7 @@ export default function DocumentationPage() {
           {tabs.find((tab) => tab.id === activeTab)?.component}
         </div>
       </div>
+      <Footer/>
     </div>
   );
 }
