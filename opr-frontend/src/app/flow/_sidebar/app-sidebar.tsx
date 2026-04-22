@@ -19,6 +19,7 @@ import {
   Zap,
   RefreshCw,
   AlertCircle,
+  Database,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -35,6 +36,19 @@ import { useSaveWorkflow } from "@/hooks/useSaveWorkflow"
 import { useLoadWorkflow } from "@/hooks/useLoadWorkflow"
 import { NODE_OUTPUT_REGISTRY, NodeOutputVar } from "@/lib/nodeOutputRegistry"
 import { fetchWorkflows, deleteWorkflow, WorkflowListItem } from "@/lib/api"
+import { PerformancePanelButton } from "@/components/PerformancePanel"
+import { jwtDecode } from "jwt-decode"
+
+function getOwnerIdFromJwt(): string | null {
+  try {
+    const raw = localStorage.getItem("__Pearl_Token");
+    if (!raw) return null;
+    const decoded = jwtDecode<{ sub?: string; userId?: string }>(raw);
+    return decoded.sub ?? decoded.userId ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   string:  { bg: "rgba(6,182,212,0.15)",   text: "#06b6d4" },
@@ -100,7 +114,6 @@ function ReturnVariablesBrowser({
   const { enhancedNodes, addReturnVariable, returnVariableTags } = useWorkflow();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Collect all unique node types currently on the canvas
   const browseItems: VarBrowseItem[] = [];
   const seen = new Set<string>();
   enhancedNodes.forEach((n) => {
@@ -124,7 +137,6 @@ function ReturnVariablesBrowser({
     });
   };
 
-  // Position: right of sidebar
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   useEffect(() => {
     if (isOpen && sidebarRef.current) {
@@ -148,10 +160,8 @@ function ReturnVariablesBrowser({
       className="flex flex-col rounded-2xl overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Glassmorphism background */}
       <div className="absolute inset-0 bg-[#080a0f]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl" style={{ zIndex: -1 }} />
 
-      {/* Header */}
       <div className="relative flex items-center gap-2 px-4 py-3.5 border-b border-white/8">
         <div className="w-7 h-7 rounded-lg bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center flex-shrink-0">
           <Layers className="w-3.5 h-3.5 text-cyan-400" />
@@ -168,7 +178,6 @@ function ReturnVariablesBrowser({
         </button>
       </div>
 
-      {/* Content */}
       <div className="relative flex-1 overflow-y-auto">
         {browseItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-12 px-6">
@@ -190,14 +199,13 @@ function ReturnVariablesBrowser({
                   className="rounded-xl overflow-hidden"
                   style={{ border: "1px solid rgba(255,255,255,0.07)" }}
                 >
-                  {/* Group header */}
                   <button
                     onClick={() => toggleGroup(item.nodeType)}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/4 transition-colors text-left"
                     style={{ background: "rgba(255,255,255,0.03)" }}
                   >
                     <span className="text-base flex-shrink-0">
-                      {/* Use first letter colored icon fallback */}
+                  
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-semibold text-white/80 truncate">{item.nodeLabel}</p>
@@ -209,7 +217,6 @@ function ReturnVariablesBrowser({
                     }
                   </button>
 
-                  {/* Group variables */}
                   {isExpanded && (
                     <div className="px-3 pb-2.5 pt-1 space-y-1">
                       {item.vars.map((v) => {
@@ -251,7 +258,6 @@ function ReturnVariablesBrowser({
         )}
       </div>
 
-      {/* Footer hint */}
       <div className="relative px-4 py-3 border-t border-white/8">
         <p className="text-[10px] text-white/30 text-center">
           Click any variable to add it to return variables
@@ -261,9 +267,8 @@ function ReturnVariablesBrowser({
   );
 }
 
-const COLLAPSE_THRESHOLD = 300; // chars — values longer than this get a "Show more" toggle
+const COLLAPSE_THRESHOLD = 300; 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ResultEntry({ entryKey, value }: { entryKey: string; value: any }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -319,13 +324,11 @@ function WorkflowResultBrowser({
   isOpen,
   onClose,
   sidebarRef,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resultData,
 }: {
   isOpen: boolean;
   onClose: () => void;
   sidebarRef: React.RefObject<HTMLDivElement | null>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resultData: any;
 }) {
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
@@ -357,10 +360,8 @@ function WorkflowResultBrowser({
       className="flex flex-col rounded-2xl overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Glassmorphism background */}
       <div className="absolute inset-0 bg-[#080a0f]/90 backdrop-blur-2xl border border-cyan-400/20 rounded-2xl shadow-2xl" style={{ zIndex: -1 }} />
 
-      {/* Header */}
       <div className="relative flex items-center gap-2 px-4 py-3.5 border-b border-white/8 bg-cyan-950/20">
         <div className="w-7 h-7 rounded-lg bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center flex-shrink-0">
           <Play className="w-3.5 h-3.5 text-cyan-400" />
@@ -377,7 +378,6 @@ function WorkflowResultBrowser({
         </button>
       </div>
 
-      {/* Content */}
       <div className="relative flex-1 overflow-y-auto p-3 space-y-2">
         {entries.length === 0 ? (
            <div className="flex flex-col items-center justify-center h-full gap-3 py-12 px-6">
@@ -399,9 +399,6 @@ function WorkflowResultBrowser({
   );
 }
 
-// ────────────────────────────────────────────
-// My Workflows Browser
-// ────────────────────────────────────────────
 function MyWorkflowsBrowser({
   isOpen,
   onClose,
@@ -484,7 +481,6 @@ function MyWorkflowsBrowser({
     >
       <div className="absolute inset-0 bg-[#080a0f]/92 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl" style={{ zIndex: -1 }} />
 
-      {/* Header */}
       <div className="relative flex items-center gap-2 px-4 py-3.5 border-b border-white/8">
         <div className="w-7 h-7 rounded-lg bg-indigo-400/10 border border-indigo-400/20 flex items-center justify-center flex-shrink-0">
           <FolderOpen className="w-3.5 h-3.5 text-indigo-400" />
@@ -501,7 +497,6 @@ function MyWorkflowsBrowser({
         </button>
       </div>
 
-      {/* Content */}
       <div className="relative flex-1 overflow-y-auto p-3 space-y-2">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -631,11 +626,15 @@ export function AppSidebar() {
   const [showBrowser, setShowBrowser] = useState(false);
   const [showResultBrowser, setShowResultBrowser] = useState(false);
   const [showMyWorkflows, setShowMyWorkflows] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [workflowResult, setWorkflowResult] = useState<any>(null);
   const sidebarRef = useRef<HTMLDivElement | null>(null);
 
-  // Close browser on outside click
+  const [lastExecution, setLastExecution] = useState<{
+    executionId: string;
+    workflowId: string;
+    ownerId: string;
+  } | null>(null);
+
   useEffect(() => {
     if (!showBrowser) return;
     const handler = (e: MouseEvent) => {
@@ -647,7 +646,6 @@ export function AppSidebar() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showBrowser]);
 
-  // Close result browser on outside click
   useEffect(() => {
     if (!showResultBrowser) return;
     const handler = (e: MouseEvent) => {
@@ -659,7 +657,6 @@ export function AppSidebar() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showResultBrowser]);
 
-  // Close my workflows on outside click
   useEffect(() => {
     if (!showMyWorkflows) return;
     const handler = (e: MouseEvent) => {
@@ -751,6 +748,11 @@ export function AppSidebar() {
                         setShowResultBrowser(true);
                         setShowBrowser(false);
                         setShowMyWorkflows(false);
+                        const execId = response?.executionId;
+                        const ownerId = getOwnerIdFromJwt();
+                        if (execId && ownerId) {
+                          setLastExecution({ executionId: execId, workflowId, ownerId });
+                        }
                       } catch (error) {
                         console.error("Failed to run workflow:", error);
                       } finally {
@@ -766,16 +768,10 @@ export function AppSidebar() {
                     variant="outline"
                     className="w-full justify-center border-white/10 text-black/60 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300"
                     onClick={async () => {
-                      // Run without saving
                       const fullWorkflow = getWorkflowExecutionData();
                       const payload = serializeWorkflowForBackend(fullWorkflow);
                       try {
                         setIsRunning(true);
-                        // Save a temporary workflow for the run or just pass the payload directly if your backend supports a run endpoint without ID.
-                        // Assuming workflowId helps it run, if we don't have one, we MUST save it first, OR if backend allows it, pass a "fake" workflowId.
-                        // Actually, since the endpoint is `/{id}/run`, we *must* have an ID.
-                        // For a pure "run without saving" and keeping it smooth, we can auto-save it hiddenly or create a temporary one.
-                        // As `createWorkflow` generates an ID, let's create a temp one.
                         let tempId = workflowId;
                         if (!tempId) {
                           const saveRes = await saveWorkflow();
@@ -788,6 +784,11 @@ export function AppSidebar() {
                         setShowResultBrowser(true);
                         setShowBrowser(false);
                         setShowMyWorkflows(false);
+                        const execId = response?.executionId;
+                        const ownerId = getOwnerIdFromJwt();
+                        if (execId && tempId && ownerId) {
+                          setLastExecution({ executionId: execId, workflowId: tempId, ownerId });
+                        }
                       } catch (error) {
                         console.error("Failed quick run:", error);
                       } finally {
@@ -811,13 +812,26 @@ export function AppSidebar() {
                       View Last Results
                     </Button>
                   )}
+
+                  {lastExecution && (
+                    <div className="relative">
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                      </span>
+                      <PerformancePanelButton
+                        executionId={lastExecution.executionId}
+                        workflowId={lastExecution.workflowId}
+                        ownerId={lastExecution.ownerId}
+                        apiBase={process.env.NEXT_PUBLIC_BACKEND_URL ?? ""}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* ── Return Variables Section ── */}
             <div className="px-3 py-2">
-              {/* Section header — clickable to open browser */}
               <button
                 onClick={() => setShowBrowser((v) => !v)}
                 className="w-full flex items-center gap-2 mb-3 group"
@@ -851,7 +865,6 @@ export function AppSidebar() {
                 />
               </button>
 
-              {/* Added tags */}
               {returnVariableTags.length > 0 ? (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between mb-2">
@@ -870,7 +883,6 @@ export function AppSidebar() {
                       onRemove={removeReturnVariable}
                     />
                   ))}
-                  {/* Browse button */}
                   <button
                     onClick={() => setShowBrowser(true)}
                     className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] text-white/40 hover:text-cyan-400 transition-colors"
@@ -929,7 +941,6 @@ export function AppSidebar() {
         </div>
       </div>
 
-      {/* Floating variable browser panel */}
       <ReturnVariablesBrowser
         isOpen={showBrowser}
         onClose={() => setShowBrowser(false)}
