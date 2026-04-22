@@ -19,7 +19,6 @@ import {
   Zap,
   RefreshCw,
   AlertCircle,
-  Database,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -764,7 +763,7 @@ export function AppSidebar() {
 
                   <Button
                     variant="outline"
-                    className="w-full justify-center border-white/10 text-black/60 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300"
+                    className="w-full justify-center border-white/10 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300"
                     onClick={async () => {
                       const fullWorkflow = getWorkflowExecutionData();
                       const payload = serializeWorkflowForBackend(fullWorkflow);
