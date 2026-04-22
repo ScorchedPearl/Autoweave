@@ -56,12 +56,6 @@ public class SagaCoordinatorService {
                 .build();
 
         step = sagaStepRepo.save(step);
-
-        sagaInstanceRepo.findById(sagaId).ifPresent(saga -> {
-            saga.setCurrentStep(nodeId);
-            sagaInstanceRepo.save(saga);
-        });
-
         writeOutbox(sagaId, step.getStepId(), "saga-node-events", "STEP_EXECUTING",
                 Map.of("sagaId", sagaId, "nodeId", nodeId, "stepState", "EXECUTING",
                         "stepOrder", stepOrder, "nodeType", nodeType));

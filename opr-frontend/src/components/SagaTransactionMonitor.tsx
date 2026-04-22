@@ -3,9 +3,22 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CheckCircle2, XCircle, RotateCcw, Loader2, Shield,
-  Zap, AlertTriangle, Activity, Clock, Info, Database,
-  ArrowRight, RefreshCw
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  Loader2,
+  Shield,
+  Zap,
+  AlertTriangle,
+  Activity,
+  Clock,
+  Database,
+  ArrowDown,
+  RefreshCw,
+  CircleDot,
+  Circle,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -44,108 +57,179 @@ interface Props {
   pollIntervalMs?: number;
 }
 
-// ─── Step Node Card ───────────────────────────────────────────────────────────
+// ─── Step state config ────────────────────────────────────────────────────────
 
-function StepNodeCard({ step, isActive }: { step: StepStatus; isActive: boolean }) {
-  const stateConfig: Record<string, { icon: React.ReactNode; label: string; ring: string; bg: string }> = {
-    PENDING:      { icon: <Clock size={14} />, label: "Pending",      ring: "ring-slate-600",   bg: "bg-slate-800" },
-    EXECUTING:    { icon: <Loader2 size={14} className="animate-spin" />, label: "Executing", ring: "ring-blue-500", bg: "bg-blue-500/10" },
-    COMMITTED:    { icon: <CheckCircle2 size={14} />, label: "Committed",   ring: "ring-emerald-500", bg: "bg-emerald-500/15" },
-    COMPENSATING: { icon: <RotateCcw size={14} className="animate-spin" />, label: "Compensating", ring: "ring-orange-500", bg: "bg-orange-500/10" },
-    COMPENSATED:  { icon: <RotateCcw size={14} />, label: "Compensated",  ring: "ring-orange-400", bg: "bg-orange-400/10" },
-    FAILED:       { icon: <XCircle size={14} />, label: "Failed",       ring: "ring-red-500",    bg: "bg-red-500/10" },
-  };
+const STEP_CFG: Record<
+  string,
+  {
+    icon: React.ReactNode;
+    label: string;
+    color: string;
+    bg: string;
+    border: string;
+  }
+> = {
+  PENDING: {
+    icon: <Circle size={12} />,
+    label: "Waiting",
+    color: "rgba(255,255,255,0.3)",
+    bg: "rgba(255,255,255,0.02)",
+    border: "rgba(255,255,255,0.06)",
+  },
+  EXECUTING: {
+    icon: <Loader2 size={12} className="animate-spin" />,
+    label: "Running",
+    color: "#60a5fa",
+    bg: "rgba(59,130,246,0.06)",
+    border: "rgba(59,130,246,0.2)",
+  },
+  COMMITTED: {
+    icon: <CheckCircle2 size={12} />,
+    label: "Done",
+    color: "#22d3ee",
+    bg: "rgba(6,182,212,0.06)",
+    border: "rgba(6,182,212,0.2)",
+  },
+  COMPENSATING: {
+    icon: <RotateCcw size={12} className="animate-spin" />,
+    label: "Rolling Back",
+    color: "#fb923c",
+    bg: "rgba(249,115,22,0.06)",
+    border: "rgba(249,115,22,0.2)",
+  },
+  COMPENSATED: {
+    icon: <RotateCcw size={12} />,
+    label: "Rolled Back",
+    color: "#fdba74",
+    bg: "rgba(249,115,22,0.04)",
+    border: "rgba(249,115,22,0.15)",
+  },
+  FAILED: {
+    icon: <XCircle size={12} />,
+    label: "Failed",
+    color: "#f87171",
+    bg: "rgba(239,68,68,0.06)",
+    border: "rgba(239,68,68,0.2)",
+  },
+};
 
-  const cfg = stateConfig[step.stepState] || stateConfig.PENDING;
-  const colorText = {
-    "#22c55e": "text-emerald-400",
-    "#3b82f6": "text-blue-400",
-    "#f97316": "text-orange-500",
-    "#fb923c": "text-orange-400",
-    "#ef4444": "text-red-400",
-    "#6b7280": "text-slate-400",
-  }[step.color] || "text-slate-400";
+// ─── Step Card ────────────────────────────────────────────────────────────────
+
+function StepCard({ step, isActive }: { step: StepStatus; isActive: boolean }) {
+  const cfg = STEP_CFG[step.stepState] ?? STEP_CFG.PENDING;
+  const isRunning =
+    step.stepState === "EXECUTING" || step.stepState === "COMPENSATING";
+
+  const friendlyType = step.nodeType
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{
-        opacity: 1,
-        scale: isActive ? 1.04 : 1,
-        boxShadow: isActive ? `0 0 0 2px ${step.color}55` : "none",
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0, scale: isActive ? 1.015 : 1 }}
+      transition={{ type: "spring", stiffness: 300, damping: 28 }}
+      className="relative rounded-2xl overflow-hidden"
+      style={{
+        background: cfg.bg,
+        border: `1px solid ${isActive ? step.color + "55" : cfg.border}`,
+        boxShadow: isActive ? `0 0 0 1px ${step.color}22` : "none",
       }}
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className={`relative flex flex-col gap-2 p-4 rounded-xl border ring-2 ${cfg.ring} ${cfg.bg} transition-all`}
     >
-      {/* Pulsing glow for active state */}
-      {(step.stepState === "EXECUTING" || step.stepState === "COMPENSATING") && (
+      {/* Active glow */}
+      {isRunning && (
         <motion.div
-          className="absolute inset-0 rounded-xl"
-          animate={{ opacity: [0.3, 0, 0.3] }}
-          transition={{ repeat: Infinity, duration: 1.5 }}
-          style={{ boxShadow: `0 0 20px ${step.color}44` }}
+          className="absolute inset-0 rounded-2xl pointer-events-none"
+          animate={{ opacity: [0.15, 0, 0.15] }}
+          transition={{ repeat: Infinity, duration: 1.8 }}
+          style={{ boxShadow: `inset 0 0 20px ${step.color}22` }}
         />
       )}
 
-      <div className="flex items-center justify-between">
-        <div className={`flex items-center gap-2 text-sm font-medium ${colorText}`}>
+      <div className="relative flex items-center gap-3.5 px-4 py-3.5">
+        {/* Order */}
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-mono font-bold flex-shrink-0"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            color: "rgba(255,255,255,0.25)",
+          }}
+        >
+          {step.stepOrder}
+        </div>
+
+        {/* Name */}
+        <div className="flex-1 min-w-0">
+          <span className="text-[14px] font-medium text-white/80 truncate block">
+            {friendlyType}
+          </span>
+          {step.errorMessage && (
+            <span className="flex items-center gap-1 text-[10px] text-red-400 mt-0.5">
+              <AlertTriangle size={8} />
+              {step.errorMessage}
+            </span>
+          )}
+          {step.hasCompensation &&
+            step.stepState !== "PENDING" &&
+            step.stepState !== "EXECUTING" && (
+              <span className="flex items-center gap-1 text-[9px] text-white/20 mt-0.5">
+                <Shield size={8} />
+                Undo action saved
+              </span>
+            )}
+        </div>
+
+        {/* Status pill */}
+        <div
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold flex-shrink-0"
+          style={{ color: cfg.color, background: "rgba(0,0,0,0.2)" }}
+        >
           {cfg.icon}
-          <span className="font-mono text-xs text-slate-400">#{step.stepOrder}</span>
-          <span className="truncate max-w-[120px]">{step.nodeType}</span>
-        </div>
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${colorText} bg-black/20`}>
           {cfg.label}
-        </span>
+        </div>
       </div>
-
-      <div className="text-xs text-slate-500 font-mono truncate">{step.nodeId}</div>
-
-      {step.errorMessage && (
-        <div className="text-xs text-red-400 bg-red-900/20 rounded-lg px-2 py-1 mt-1">
-          ⚠ {step.errorMessage}
-        </div>
-      )}
-
-      {step.hasCompensation && step.stepState !== "PENDING" && step.stepState !== "EXECUTING" && (
-        <div className="flex items-center gap-1 text-[10px] text-slate-500">
-          <Shield size={9} />
-          <span>Compensating TX stored</span>
-        </div>
-      )}
     </motion.div>
   );
 }
 
-// ─── Saga State Badge ─────────────────────────────────────────────────────────
+// ─── Overall Status Badge ──────────────────────────────────────────────────────
 
-function SagaStateBadge({ state, color }: { state: string; color: string }) {
-  const emoji: Record<string, string> = {
-    STARTED:      "🔵",
-    IN_PROGRESS:  "⚡",
-    COMPLETED:    "✅",
-    COMPENSATING: "🔄",
-    COMPENSATED:  "🟠",
-    FAILED:       "❌",
+function StatusBadge({ state, color }: { state: string; color: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    STARTED: <CircleDot size={10} />,
+    IN_PROGRESS: <Loader2 size={10} className="animate-spin" />,
+    COMPLETED: <CheckCircle2 size={10} />,
+    COMPENSATING: <RotateCcw size={10} className="animate-spin" />,
+    COMPENSATED: <RotateCcw size={10} />,
+    FAILED: <XCircle size={10} />,
+  };
+  const friendly: Record<string, string> = {
+    STARTED: "Started",
+    IN_PROGRESS: "In Progress",
+    COMPLETED: "Completed",
+    COMPENSATING: "Rolling Back",
+    COMPENSATED: "Rolled Back",
+    FAILED: "Failed",
   };
 
   return (
     <motion.div
       key={state}
-      initial={{ scale: 0.8, opacity: 0 }}
+      initial={{ scale: 0.85, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
-      style={{ backgroundColor: `${color}22`, border: `1px solid ${color}66`, color }}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold"
+      style={{ background: `${color}15`, border: `1px solid ${color}35`, color }}
     >
-      <span>{emoji[state] || "⏳"}</span>
-      <span>{state.replace("_", " ")}</span>
+      {icons[state] ?? <CircleDot size={10} />}
+      {friendly[state] ?? state.replace("_", " ")}
     </motion.div>
   );
 }
 
-// ─── Rollback Animation Overlay ───────────────────────────────────────────────
+// ─── Rollback Ripple ──────────────────────────────────────────────────────────
 
-function RollbackWave({ active }: { active: boolean }) {
+function RollbackRipple({ active }: { active: boolean }) {
   if (!active) return null;
   return (
     <motion.div
@@ -157,17 +241,22 @@ function RollbackWave({ active }: { active: boolean }) {
       {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
-          className="absolute inset-0 rounded-2xl border-2 border-orange-500/50"
-          initial={{ scale: 0.8, opacity: 0.8 }}
-          animate={{ scale: 1.4, opacity: 0 }}
-          transition={{ repeat: Infinity, duration: 2, delay: i * 0.6, ease: "easeOut" }}
+          className="absolute inset-0 rounded-2xl border border-orange-500/20"
+          initial={{ scale: 0.9, opacity: 0.5 }}
+          animate={{ scale: 1.6, opacity: 0 }}
+          transition={{
+            repeat: Infinity,
+            duration: 2.4,
+            delay: i * 0.8,
+            ease: "easeOut",
+          }}
         />
       ))}
     </motion.div>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export function SagaTransactionMonitor({
   executionId,
@@ -185,15 +274,27 @@ export function SagaTransactionMonitor({
   const isCompensating =
     data?.sagaState === "COMPENSATING" || data?.sagaState === "COMPENSATED";
   const isTerminal =
-    data?.sagaState === "COMPLETED" || data?.sagaState === "FAILED" || data?.sagaState === "COMPENSATED";
+    data?.sagaState === "COMPLETED" ||
+    data?.sagaState === "FAILED" ||
+    data?.sagaState === "COMPENSATED";
+
+  const committedCount =
+    data?.steps.filter((s) => s.stepState === "COMMITTED").length ?? 0;
+  const totalCount = data?.steps.length ?? 0;
+  const progressPct = totalCount > 0 ? (committedCount / totalCount) * 100 : 0;
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${apiBase}/api/v1/saga/execution/${executionId}/status`);
+      const res = await fetch(
+        `${apiBase}/api/v1/saga/execution/${executionId}/status`
+      );
       if (res.status === 404) {
         setNotFound(true);
         setLoading(false);
-        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
         return;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -202,10 +303,12 @@ export function SagaTransactionMonitor({
       consecutiveErrors.current = 0;
     } catch (e: any) {
       consecutiveErrors.current += 1;
-      // Stop polling after 3 network failures (e.g. CORS, server down)
       if (consecutiveErrors.current >= 3) {
-        setError(`Network error: ${e.message}. Polling stopped. Is the backend running?`);
-        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+        setError(`Connection lost: ${e.message}`);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
       }
     } finally {
       setLoading(false);
@@ -215,7 +318,6 @@ export function SagaTransactionMonitor({
   useEffect(() => {
     setLoading(true);
     fetchStatus();
-    // Poll until terminal state
     if (!isTerminal) {
       intervalRef.current = setInterval(fetchStatus, pollIntervalMs);
     }
@@ -224,7 +326,6 @@ export function SagaTransactionMonitor({
     };
   }, [fetchStatus, isTerminal, pollIntervalMs]);
 
-  // Stop polling when terminal
   useEffect(() => {
     if (isTerminal && intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -236,7 +337,7 @@ export function SagaTransactionMonitor({
     setSimulatingFailure(true);
     try {
       await fetch(
-        `${apiBase}/api/v1/saga/execution/${executionId}/simulate-failure?nodeId=${nodeId}&reason=Professor+demo`,
+        `${apiBase}/api/v1/saga/execution/${executionId}/simulate-failure?nodeId=${nodeId}&reason=demo`,
         { method: "POST" }
       );
       await fetchStatus();
@@ -247,218 +348,320 @@ export function SagaTransactionMonitor({
     }
   };
 
-  // ACID progress: committed / total
-  const committedCount = data?.steps.filter((s) => s.stepState === "COMMITTED").length || 0;
-  const totalCount = data?.steps.length || 0;
-  const progressPct = totalCount > 0 ? (committedCount / totalCount) * 100 : 0;
-
   return (
-    <div className="relative h-full flex flex-col bg-slate-900 text-white rounded-2xl border border-slate-700 overflow-hidden">
-      <AnimatePresence>{isCompensating && <RollbackWave active />}</AnimatePresence>
+    <div
+      className="relative h-full flex flex-col overflow-hidden scale-[1.03] origin-top"
+      style={{ background: "transparent" }}
+    >
+      <AnimatePresence>{isCompensating && <RollbackRipple active />}</AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700 bg-slate-800/50 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${isCompensating ? "bg-orange-500/20" : "bg-violet-500/20"}`}>
-            <Activity size={20} className={isCompensating ? "text-orange-400" : "text-violet-400"} />
+      <div className="relative flex items-center justify-between px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{
+              background: isCompensating
+                ? "rgba(249,115,22,0.1)"
+                : "rgba(139,92,246,0.1)",
+              border: `1px solid ${
+                isCompensating
+                  ? "rgba(249,115,22,0.2)"
+                  : "rgba(139,92,246,0.2)"
+              }`,
+            }}
+          >
+            <Activity
+              size={14}
+              className={isCompensating ? "text-orange-400" : "text-violet-400"}
+            />
           </div>
           <div>
-            <h2 className="text-base font-semibold">Saga Transaction Monitor</h2>
-            <p className="text-xs text-slate-400">Distributed consistency visualizer</p>
+            <p className="text-[13px] font-semibold text-white/70">
+              Transaction Monitor
+            </p>
+            <p className="text-[10px] text-white/25">Live step tracking</p>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
-          {data && <SagaStateBadge state={data.sagaState} color={data.sagaColor} />}
+          {data && (
+            <div
+              className="flex items-center gap-1 text-[10px]"
+              style={{
+                color: isTerminal ? "rgba(255,255,255,0.2)" : "#4ade80",
+              }}
+            >
+              {isTerminal ? (
+                <WifiOff size={10} />
+              ) : (
+                <motion.div
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                >
+                  <Wifi size={10} />
+                </motion.div>
+              )}
+              <span>{isTerminal ? "Stopped" : "Live"}</span>
+            </div>
+          )}
+
+          {data && <StatusBadge state={data.sagaState} color={data.sagaColor} />}
+
           <button
-            id="saga-refresh-btn"
-            onClick={() => { setLoading(true); fetchStatus(); }}
+            onClick={() => {
+              setLoading(true);
+              fetchStatus();
+            }}
             disabled={loading}
-            className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-50 transition-colors"
+            className="p-1.5 rounded-xl transition-all disabled:opacity-40 hover:scale-105"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            <RefreshCw
+              size={13}
+              className={`text-white/40 ${loading ? "animate-spin" : ""}`}
+            />
           </button>
         </div>
       </div>
 
-      {/* ACID progress bar */}
-      {data && (
-        <div className="px-6 pt-3 pb-1 flex-shrink-0">
-          <div className="flex justify-between text-xs text-slate-400 mb-1">
-            <span>ACID Commit Progress</span>
-            <span className="font-mono">{committedCount}/{totalCount} steps committed</span>
+      {/* Progress — thin, elegant */}
+      {data && totalCount > 0 && (
+        <div className="px-5 pb-2 flex-shrink-0">
+          <div className="flex justify-between text-[10px] text-white/20 mb-1">
+            <span>Progress</span>
+            <span className="font-mono">
+              {committedCount}/{totalCount}
+            </span>
           </div>
-          <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+          <div
+            className="h-1 rounded-full overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.04)" }}
+          >
             <motion.div
               animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.5 }}
-              className={`h-full rounded-full ${
-                isCompensating
-                  ? "bg-gradient-to-r from-orange-700 to-orange-400"
-                  : "bg-gradient-to-r from-violet-700 to-emerald-500"
-              }`}
+              transition={{ duration: 0.4 }}
+              className="h-full rounded-full"
+              style={{
+                background: isCompensating
+                  ? "linear-gradient(90deg, #c2410c, #fb923c)"
+                  : "linear-gradient(90deg, #7c3aed, #06b6d4)",
+              }}
             />
           </div>
         </div>
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6 space-y-5">
+      <div className="relative flex-1 overflow-auto px-5 pb-5 space-y-3.5">
+        {/* Loading */}
         {loading && !data && (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-              className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full"
+              transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+              className="w-8 h-8 rounded-full border-2 border-t-transparent"
+              style={{
+                borderColor: "rgba(139,92,246,0.2)",
+                borderTopColor: "#8b5cf6",
+              }}
             />
-            <p className="text-slate-400 text-sm">Connecting to Saga Monitor…</p>
+            <p className="text-[12px] text-white/20">Connecting…</p>
           </div>
         )}
 
+        {/* Error */}
         {error && (
-          <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/40 rounded-xl p-4">
-            <AlertTriangle size={16} className="text-red-400" />
-            <p className="text-sm text-red-300">{error}</p>
+          <div
+            className="flex items-center gap-2.5 rounded-2xl px-4 py-3"
+            style={{
+              background: "rgba(239,68,68,0.06)",
+              border: "1px solid rgba(239,68,68,0.18)",
+            }}
+          >
+            <AlertTriangle size={13} className="text-red-400 flex-shrink-0" />
+            <p className="text-[12px] text-red-300">{error}</p>
           </div>
         )}
 
+        {/* Not found */}
         {notFound && (
-          <div className="flex flex-col items-center justify-center py-16 gap-4 text-slate-500 px-6">
-            <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700">
-              <Activity size={28} className="opacity-30 mx-auto" />
+          <div className="flex flex-col items-center justify-center py-20 gap-4 text-center px-6">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.03)" }}
+            >
+              <Database size={20} className="text-white/15" />
             </div>
-            <div className="text-center space-y-1">
-              <p className="text-sm font-medium text-slate-400">Saga not started for this execution</p>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                The Saga infrastructure is built and ready.<br />
-                It activates once <code className="text-violet-400">SagaCoordinatorService.startSaga()</code><br />
-                is wired into <code className="text-violet-400">DistributedWorkflowCoordinator</code>.
+            <div>
+              <p className="text-sm font-medium text-white/40">
+                No transaction data yet
+              </p>
+              <p className="text-[10px] text-white/20 mt-1.5 leading-relaxed">
+                Monitoring activates automatically when this workflow runs.
               </p>
             </div>
-            <div className="text-[10px] font-mono bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-500 w-full">
-              <div className="text-slate-600 mb-1">// Add to startWorkflowExecution():</div>
-              <div className="text-violet-400">sagaCoordinator.startSaga(executionId, workflowId);</div>
-            </div>
           </div>
         )}
 
-        {!data && !loading && !error && !notFound && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-500">
-            <Database size={32} className="opacity-30" />
-            <p className="text-sm">Connecting to Saga Monitor…</p>
-          </div>
-        )}
-
+        {/* Data */}
         {data && (
           <>
-            {/* Compensation alert banner */}
+            {/* Alert banners — non-boxy, full-radius pill */}
             <AnimatePresence>
               {isCompensating && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/40 rounded-xl p-4"
+                  exit={{ opacity: 0, y: -6 }}
+                  className="flex items-center gap-3 rounded-2xl px-4 py-3"
+                  style={{
+                    background: "rgba(249,115,22,0.06)",
+                    border: "1px solid rgba(249,115,22,0.2)",
+                  }}
                 >
-                  <RotateCcw size={18} className="text-orange-400 mt-0.5 flex-shrink-0 animate-spin" />
+                  <RotateCcw
+                    size={14}
+                    className="text-orange-400 flex-shrink-0 animate-spin"
+                  />
                   <div>
-                    <p className="text-sm font-medium text-orange-300">Compensation Cascade Active</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Rolling back committed steps in reverse topological order.
-                      Compensating transactions are being published to Kafka via the Outbox Pattern.
+                    <p className="text-[12px] font-semibold text-orange-300">
+                      Rolling Back
+                    </p>
+                    <p className="text-[10px] text-white/30 mt-0.5">
+                      Undoing completed steps in reverse order to keep your data
+                      consistent.
                     </p>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Step timeline */}
+            {data.sagaState === "COMPLETED" && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 rounded-2xl px-4 py-3"
+                style={{
+                  background: "rgba(6,182,212,0.06)",
+                  border: "1px solid rgba(6,182,212,0.18)",
+                }}
+              >
+                <CheckCircle2
+                  size={14}
+                  className="text-cyan-400 flex-shrink-0"
+                />
+                <div>
+                  <p className="text-[12px] font-semibold text-cyan-300">
+                    All Steps Done
+                  </p>
+                  <p className="text-[10px] text-white/30 mt-0.5">
+                    Every step finished successfully.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Summary metrics — horizontal strip */}
+            <div className="flex gap-2 overflow-x-auto pb-0.5">
+              {[
+                {
+                  label: "Total",
+                  value: totalCount,
+                  color: "rgba(255,255,255,0.4)",
+                  icon: <Clock size={11} />,
+                },
+                {
+                  label: "Done",
+                  value: committedCount,
+                  color: "#22d3ee",
+                  icon: <CheckCircle2 size={11} />,
+                },
+                {
+                  label: "Failed",
+                  value: data.steps.filter(
+                    (s) =>
+                      s.stepState === "FAILED" || s.stepState === "COMPENSATED"
+                  ).length,
+                  color: "#f87171",
+                  icon: <XCircle size={11} />,
+                },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  className="flex-shrink-0 flex flex-col items-center gap-1 px-4 py-2.5 rounded-2xl"
+                  style={{ background: "rgba(255,255,255,0.025)", minWidth: 72 }}
+                >
+                  <span style={{ color: s.color }}>{s.icon}</span>
+                  <span
+                    className="text-lg font-bold font-mono leading-none"
+                    style={{ color: s.color }}
+                  >
+                    {s.value}
+                  </span>
+                  <span className="text-[9px] text-white/20">{s.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Timeline */}
             <div>
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-                Distributed Step Timeline
-              </h3>
+              <p className="text-[9px] font-semibold text-white/20 uppercase tracking-widest mb-3">
+                Steps
+              </p>
+
               <div className="relative">
-                {/* Timeline line */}
-                <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-700" />
-                <div className="space-y-3 pl-10">
+                <div
+                  className="absolute left-[19px] top-3 bottom-3 w-px"
+                  style={{ background: "rgba(255,255,255,0.05)" }}
+                />
+
+                <div className="space-y-2 pl-10">
                   {data.steps.map((step, i) => (
                     <div key={step.stepId} className="relative">
-                      {/* Dot on timeline */}
                       <motion.div
-                        className="absolute -left-[30px] top-4 w-3 h-3 rounded-full border-2 border-slate-900"
+                        className="absolute -left-[30px] top-[14px] w-2.5 h-2.5 rounded-full"
                         animate={{ backgroundColor: step.color }}
-                        style={{ backgroundColor: step.color }}
+                        style={{
+                          backgroundColor: step.color,
+                          border: "2px solid #07090e",
+                        }}
                       />
-                      {/* Arrow between steps */}
                       {i < data.steps.length - 1 && (
-                        <div className="absolute -left-[24px] top-8 text-slate-600">
-                          <ArrowRight size={10} />
+                        <div className="absolute -left-[26px] top-8 text-white/10">
+                          <ArrowDown size={8} />
                         </div>
                       )}
-                      <StepNodeCard
+
+                      <StepCard
                         step={step}
                         isActive={data.currentStep === step.nodeId}
                       />
 
-                      {/* Demo failure button */}
                       {step.stepState === "COMMITTED" && !isTerminal && (
                         <button
-                          id={`saga-fail-btn-${step.nodeId}`}
                           onClick={() => handleSimulateFailure(step.nodeId)}
                           disabled={simulatingFailure}
-                          className="mt-1 text-[10px] text-red-500/60 hover:text-red-400 transition-colors disabled:opacity-50 flex items-center gap-1"
+                          className="mt-1 flex items-center gap-1 text-[9px] transition-colors disabled:opacity-40"
+                          style={{ color: "rgba(239,68,68,0.35)" }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.color = "rgba(239,68,68,0.7)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.color = "rgba(239,68,68,0.35)")
+                          }
                         >
-                          <Zap size={8} />
-                          Simulate failure here (demo)
+                          <Zap size={7} />
+                          Simulate failure here
                         </button>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-
-            {/* Narrative */}
-            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Info size={14} className="text-violet-400" />
-                <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">
-                  System Narrative
-                </span>
-              </div>
-              <p className="text-sm text-slate-300 leading-relaxed">{data.sagaNarrative}</p>
-            </div>
-
-            {/* ACID Talking Points */}
-            <div className="grid grid-cols-1 gap-3">
-              {[
-                {
-                  title: "Atomicity via Outbox Pattern",
-                  body: "Each node's Kafka event is written as a DB row IN THE SAME TRANSACTION as the saga step. The Outbox Relay publishes it afterward. No event is ever lost — even on crash.",
-                  color: "text-blue-400 border-blue-500/30 bg-blue-500/5",
-                },
-                {
-                  title: "Consistency via DB Trigger",
-                  body: "PostgreSQL trigger fn_sync_saga_state() fires on every step state change to update saga_instances.saga_state. The saga-level state is always a deterministic function of step states.",
-                  color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/5",
-                },
-                {
-                  title: "Isolation via Optimistic Locking",
-                  body: "@Version on SagaInstance increments on every update. Concurrent transactions competing for the same saga row will get an OptimisticLockException, preventing lost-update anomalies.",
-                  color: "text-violet-400 border-violet-500/30 bg-violet-500/5",
-                },
-                {
-                  title: "Durability via Compensating TXs",
-                  body: "Each step's undo payload is persisted in saga_steps.compensation_payload before the step executes. On any crash, the Saga coordinator can replay compensations from durable DB state.",
-                  color: "text-orange-400 border-orange-500/30 bg-orange-500/5",
-                },
-              ].map((tp, i) => (
-                <div key={i} className={`border rounded-xl p-4 ${tp.color}`}>
-                  <div className={`text-xs font-semibold mb-1 ${tp.color.split(" ")[0]}`}>
-                    {["A", "C", "I", "D"][i]} — {tp.title}
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">{tp.body}</p>
-                </div>
-              ))}
             </div>
           </>
         )}
