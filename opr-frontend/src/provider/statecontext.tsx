@@ -222,21 +222,21 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       position: nodeData.position || { x: Math.random() * 400, y: Math.random() * 400 },
       data: {
         id: nodeData.id,
-        label: nodeData.type,
+        label: nodeData.configuration?.label || nodeData.type,
         nodeType: nodeData.type,
-        icon: '🔧',
-        description: '',
+        icon: nodeData.configuration?.icon || '🔧',
+        description: nodeData.configuration?.description || '',
         configuration: nodeData.configuration,
         config: nodeData.configuration,
-        executionState: 'idle',
+        executionState: 'idle' as const,
       },
     }));
 
     setEnhancedNodes(loadedNodes);
     if (setNodes) setNodes(loadedNodes as unknown as import('@xyflow/react').Node<import('@/lib/mockdata').WorkflowNodeData>[]);
 
-    // Restore edges onto the ReactFlow canvas
-    if (setEdges && data.edges) {
+    // Restore edges — must be deferred so ReactFlow has rendered nodes first
+    if (setEdges && data.edges && data.edges.length > 0) {
       const restoredEdges = data.edges.map(edge => ({
         id: edge.id,
         source: edge.source,
@@ -247,7 +247,8 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         animated: true,
         style: { stroke: '#3b82f6', strokeWidth: 2 },
       }));
-      setEdges(restoredEdges);
+      // Defer one tick so ReactFlow internal node registry is populated before edges are added
+      setTimeout(() => setEdges(restoredEdges), 50);
     }
 
     setWorkflowMetadata(data.metadata);

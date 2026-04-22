@@ -9,6 +9,7 @@ import { SagaTransactionMonitor } from "@/components/SagaTransactionMonitor";
 interface PerformancePanelProps {
   executionId: string;
   workflowId: string;
+  ownerId?: string;
   onClose?: () => void;
   apiBase?: string;
 }
@@ -50,7 +51,7 @@ const TABS: {
 
 // ─── Main PerformancePanel ────────────────────────────────────────────────────
 
-export function PerformancePanel({ executionId, workflowId, onClose, apiBase = "" }: PerformancePanelProps) {
+export function PerformancePanel({ executionId, workflowId, ownerId = "", onClose, apiBase = "" }: PerformancePanelProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("btree");
   const active = TABS.find((t) => t.id === activeTab)!;
 
@@ -156,7 +157,7 @@ export function PerformancePanel({ executionId, workflowId, onClose, apiBase = "
               transition={{ duration: 0.18 }}
               className="h-full"
             >
-              <BTreeExplorerPanel executionId={executionId} workflowId={workflowId} apiBase={apiBase} />
+              <BTreeExplorerPanel executionId={executionId} workflowId={workflowId} ownerId={ownerId} apiBase={apiBase} />
             </motion.div>
           )}
           {activeTab === "saga" && (
@@ -181,6 +182,7 @@ export function PerformancePanel({ executionId, workflowId, onClose, apiBase = "
 export function PerformancePanelButton({
   executionId,
   workflowId,
+  ownerId,
   apiBase,
 }: Omit<PerformancePanelProps, "onClose">) {
   const [open, setOpen] = useState(false);
@@ -199,7 +201,7 @@ export function PerformancePanelButton({
         }}
       >
         <Database size={14} className="text-emerald-400" />
-        Performance &amp; DBMS
+        Execution Intelligence
       </button>
 
       <AnimatePresence>
@@ -217,11 +219,12 @@ export function PerformancePanelButton({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "100%", opacity: 0 }}
               transition={{ type: "spring", stiffness: 280, damping: 28 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-2xl z-50 p-4"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-3xl z-50 p-4"
             >
               <PerformancePanel
                 executionId={executionId}
                 workflowId={workflowId}
+                ownerId={ownerId}
                 onClose={() => setOpen(false)}
                 apiBase={apiBase}
               />

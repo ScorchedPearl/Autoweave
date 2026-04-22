@@ -1,670 +1,460 @@
 "use client";
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CheckCircle2,
-  XCircle,
-  RotateCcw,
-  Loader2,
-  Shield,
-  Zap,
-  AlertTriangle,
-  Activity,
-  Clock,
-  Database,
-  ArrowDown,
-  RefreshCw,
-  CircleDot,
-  Circle,
-  Wifi,
-  WifiOff,
+  CheckCircle2, XCircle, RotateCcw, Loader2, Shield,
+  ChevronDown, ChevronRight, AlertTriangle, Activity,
+  RefreshCw, Database, ArrowDown
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface StepStatus {
-  stepId: string;
-  nodeId: string;
-  nodeType: string;
-  stepOrder: number;
-  stepState: string;
-  color: string;
-  startedAt: string | null;
-  completedAt: string | null;
-  compensatedAt: string | null;
-  errorMessage: string | null;
-  hasCompensation: boolean;
+  stepId: string; nodeId: string; nodeType: string; stepOrder: number;
+  stepState: string; color: string;
+  startedAt: string | null; completedAt: string | null; compensatedAt: string | null;
+  errorMessage: string | null; hasCompensation: boolean;
+  outputSnapshot: string | null; compensationPayload: string | null; durationMs: number;
 }
 
 interface SagaStatusResponse {
-  sagaId: string;
-  executionId: string;
-  workflowId: string;
-  sagaState: string;
-  sagaColor: string;
-  currentStep: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  compensatedAt: string | null;
-  steps: StepStatus[];
-  sagaNarrative: string;
+  sagaId: string; executionId: string; workflowId: string;
+  sagaState: string; sagaColor: string; currentStep: string | null;
+  startedAt: string | null; completedAt: string | null; compensatedAt: string | null;
+  steps: StepStatus[]; sagaNarrative: string;
 }
 
-interface Props {
-  executionId: string;
-  apiBase?: string;
-  pollIntervalMs?: number;
-}
+interface Props { executionId: string; apiBase?: string; pollIntervalMs?: number; }
 
-// ─── Step state config ────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const STEP_CFG: Record<
-  string,
-  {
-    icon: React.ReactNode;
-    label: string;
-    color: string;
-    bg: string;
-    border: string;
-  }
-> = {
-  PENDING: {
-    icon: <Circle size={12} />,
-    label: "Waiting",
-    color: "rgba(255,255,255,0.3)",
-    bg: "rgba(255,255,255,0.02)",
-    border: "rgba(255,255,255,0.06)",
-  },
-  EXECUTING: {
-    icon: <Loader2 size={12} className="animate-spin" />,
-    label: "Running",
-    color: "#60a5fa",
-    bg: "rgba(59,130,246,0.06)",
-    border: "rgba(59,130,246,0.2)",
-  },
-  COMMITTED: {
-    icon: <CheckCircle2 size={12} />,
-    label: "Done",
-    color: "#22d3ee",
-    bg: "rgba(6,182,212,0.06)",
-    border: "rgba(6,182,212,0.2)",
-  },
-  COMPENSATING: {
-    icon: <RotateCcw size={12} className="animate-spin" />,
-    label: "Rolling Back",
-    color: "#fb923c",
-    bg: "rgba(249,115,22,0.06)",
-    border: "rgba(249,115,22,0.2)",
-  },
-  COMPENSATED: {
-    icon: <RotateCcw size={12} />,
-    label: "Rolled Back",
-    color: "#fdba74",
-    bg: "rgba(249,115,22,0.04)",
-    border: "rgba(249,115,22,0.15)",
-  },
-  FAILED: {
-    icon: <XCircle size={12} />,
-    label: "Failed",
-    color: "#f87171",
-    bg: "rgba(239,68,68,0.06)",
-    border: "rgba(239,68,68,0.2)",
-  },
+const STATE_CONFIG: Record<string, { icon: React.ReactNode; label: string; textColor: string }> = {
+  PENDING:      { icon: <Database size={13} />,   label: "Pending",      textColor: "#6b7280" },
+  EXECUTING:    { icon: <Loader2 size={13} className="animate-spin" />, label: "Executing", textColor: "#3b82f6" },
+  COMMITTED:    { icon: <CheckCircle2 size={13} />, label: "Committed",  textColor: "#22c55e" },
+  COMPENSATING: { icon: <RotateCcw size={13} className="animate-spin" />, label: "Compensating", textColor: "#f97316" },
+  COMPENSATED:  { icon: <RotateCcw size={13} />,  label: "Compensated", textColor: "#fb923c" },
+  FAILED:       { icon: <XCircle size={13} />,    label: "Failed",      textColor: "#ef4444" },
 };
 
-// ─── Step Card ────────────────────────────────────────────────────────────────
+function tryParse(json: string | null): Record<string, unknown> | null {
+  if (!json) return null;
+  try { return JSON.parse(json); } catch { return null; }
+}
 
-function StepCard({ step, isActive }: { step: StepStatus; isActive: boolean }) {
-  const cfg = STEP_CFG[step.stepState] ?? STEP_CFG.PENDING;
-  const isRunning =
-    step.stepState === "EXECUTING" || step.stepState === "COMPENSATING";
+function safeKeys(obj: Record<string, unknown> | null): string[] {
+  return obj ? Object.keys(obj).filter(k => !["node_type","workflow_id","execution_id"].includes(k)) : [];
+}
 
-  const friendlyType = step.nodeType
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+// ── Json Viewer ───────────────────────────────────────────────────────────────
+
+function JsonViewer({ json, label, color }: { json: string | null; label: string; color: string }) {
+  const [open, setOpen] = useState(false);
+  const parsed = tryParse(json);
+  if (!parsed) return null;
+  const keys = safeKeys(parsed);
+  if (keys.length === 0) return null;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0, scale: isActive ? 1.015 : 1 }}
-      transition={{ type: "spring", stiffness: 300, damping: 28 }}
-      className="relative rounded-2xl overflow-hidden"
-      style={{
-        background: cfg.bg,
-        border: `1px solid ${isActive ? step.color + "55" : cfg.border}`,
-        boxShadow: isActive ? `0 0 0 1px ${step.color}22` : "none",
-      }}
-    >
-      {/* Active glow */}
-      {isRunning && (
-        <motion.div
-          className="absolute inset-0 rounded-2xl pointer-events-none"
-          animate={{ opacity: [0.15, 0, 0.15] }}
-          transition={{ repeat: Infinity, duration: 1.8 }}
-          style={{ boxShadow: `inset 0 0 20px ${step.color}22` }}
-        />
-      )}
+    <div className="mt-2 rounded-lg overflow-hidden" style={{ border: `1px solid ${color}22` }}>
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left"
+        style={{ background: `${color}08` }}>
+        <span style={{ color }}>{open ? <ChevronDown size={10}/> : <ChevronRight size={10}/>}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color }}>{label}</span>
+        <span className="text-[10px] text-white/20 ml-auto">{keys.length} fields</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }}
+            className="overflow-hidden">
+            <div className="px-3 py-2 space-y-1 font-mono text-[11px]"
+              style={{ background: "rgba(0,0,0,0.3)" }}>
+              {keys.map(k => {
+                const v = parsed[k];
+                const display = typeof v === "object" ? JSON.stringify(v) : String(v);
+                const isNumeric = typeof v === "number";
+                const isBool = typeof v === "boolean";
+                return (
+                  <div key={k} className="flex gap-2 items-start">
+                    <span className="text-white/30 flex-shrink-0">{k}:</span>
+                    <span className={`break-all ${isNumeric ? "text-amber-400" : isBool ? "text-purple-400" : "text-emerald-400"}`}>
+                      {display}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
-      <div className="relative flex items-center gap-3.5 px-4 py-3.5">
-        {/* Order */}
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-mono font-bold flex-shrink-0"
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            color: "rgba(255,255,255,0.25)",
-          }}
-        >
-          {step.stepOrder}
+// ── Step Trace Entry ─────────────────────────────────────────────────────────
+
+function StepTraceEntry({
+  step, totalDurationMs, isActive, onSimulateFail, canSimulate,
+}: {
+  step: StepStatus; totalDurationMs: number; isActive: boolean;
+  onSimulateFail: (nodeId: string) => void; canSimulate: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const cfg = STATE_CONFIG[step.stepState] ?? STATE_CONFIG.PENDING;
+  const barPct = totalDurationMs > 0 ? Math.max(3, (step.durationMs / totalDurationMs) * 100) : 30;
+
+  return (
+    <div className="relative">
+      <motion.div
+        initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: step.stepOrder * 0.07 }}
+        onClick={() => setExpanded(e => !e)}
+        className="flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 cursor-pointer transition-all hover:bg-white/[0.03]"
+        style={{
+          border: isActive ? `1px solid ${step.color}44` : "1px solid rgba(255,255,255,0.04)",
+          background: isActive ? `${step.color}08` : "rgba(255,255,255,0.02)",
+          boxShadow: isActive ? `0 0 12px ${step.color}18` : "none",
+        }}>
+
+        {/* Step icon + state */}
+        <span style={{ color: cfg.textColor }} className="flex-shrink-0">{cfg.icon}</span>
+
+        {/* Step number */}
+        <span className="text-[10px] text-white/20 font-mono flex-shrink-0">#{step.stepOrder}</span>
+
+        {/* Node type */}
+        <span className="text-xs font-semibold text-white/70 flex-1 truncate">{step.nodeType}</span>
+
+        {/* Duration waterfall bar */}
+        <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden flex-shrink-0">
+          <motion.div className="h-full rounded-full" style={{ background: step.color }}
+            initial={{ width: 0 }} animate={{ width: `${barPct}%` }}
+            transition={{ duration: 0.7, delay: step.stepOrder * 0.07 }} />
         </div>
 
-        {/* Name */}
-        <div className="flex-1 min-w-0">
-          <span className="text-[14px] font-medium text-white/80 truncate block">
-            {friendlyType}
-          </span>
-          {step.errorMessage && (
-            <span className="flex items-center gap-1 text-[10px] text-red-400 mt-0.5">
-              <AlertTriangle size={8} />
-              {step.errorMessage}
-            </span>
-          )}
-          {step.hasCompensation &&
-            step.stepState !== "PENDING" &&
-            step.stepState !== "EXECUTING" && (
-              <span className="flex items-center gap-1 text-[9px] text-white/20 mt-0.5">
-                <Shield size={8} />
-                Undo action saved
-              </span>
-            )}
-        </div>
+        {/* Duration */}
+        <span className="text-[11px] font-mono flex-shrink-0 w-14 text-right"
+          style={{ color: step.durationMs > 0 ? step.color : "rgba(255,255,255,0.2)" }}>
+          {step.durationMs > 0 ? `${step.durationMs}ms` : "–"}
+        </span>
 
-        {/* Status pill */}
-        <div
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold flex-shrink-0"
-          style={{ color: cfg.color, background: "rgba(0,0,0,0.2)" }}
-        >
-          {cfg.icon}
+        {/* State badge */}
+        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+          style={{ background: `${step.color}18`, color: step.color }}>
           {cfg.label}
-        </div>
+        </span>
+
+        {/* Expand */}
+        <span className="text-white/20 flex-shrink-0">
+          {expanded ? <ChevronDown size={11}/> : <ChevronRight size={11}/>}
+        </span>
+      </motion.div>
+
+      {/* Expanded detail panel */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="ml-4 mb-2 rounded-xl overflow-hidden"
+            style={{ border: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.25)" }}>
+            <div className="p-3 space-y-1">
+
+              {/* Node ID */}
+              <div className="text-[10px] font-mono text-white/25 pb-2"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                node: {step.nodeId}
+              </div>
+
+              {/* Output snapshot */}
+              <JsonViewer json={step.outputSnapshot} label="Step Output" color="#22c55e" />
+
+              {/* Compensation payload */}
+              {step.hasCompensation && (
+                <JsonViewer json={step.compensationPayload} label="Compensation (undo)" color="#f97316" />
+              )}
+
+              {/* Error */}
+              {step.errorMessage && (
+                <div className="mt-2 rounded-lg px-3 py-2 text-[11px] text-red-300 flex items-start gap-2"
+                  style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                  <AlertTriangle size={11} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  {step.errorMessage}
+                </div>
+              )}
+
+              {/* Timestamps */}
+              <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+                {step.startedAt && (
+                  <div className="text-white/25">Started: <span className="text-white/40">{new Date(step.startedAt).toLocaleTimeString()}</span></div>
+                )}
+                {step.completedAt && (
+                  <div className="text-white/25">Completed: <span className="text-white/40">{new Date(step.completedAt).toLocaleTimeString()}</span></div>
+                )}
+              </div>
+
+              {/* Simulate failure (demo) */}
+              {canSimulate && step.stepState === "COMMITTED" && (
+                <button onClick={(e) => { e.stopPropagation(); onSimulateFail(step.nodeId); }}
+                  className="mt-2 text-[10px] text-red-500/50 hover:text-red-400 transition-colors flex items-center gap-1">
+                  <XCircle size={9} /> Simulate failure here (professor demo)
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Connector arrow between steps */}
+      <div className="flex justify-start ml-6 mb-0.5">
+        <ArrowDown size={10} className="text-white/10" />
       </div>
-    </motion.div>
+    </div>
   );
 }
 
-// ─── Overall Status Badge ──────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────────
 
-function StatusBadge({ state, color }: { state: string; color: string }) {
-  const icons: Record<string, React.ReactNode> = {
-    STARTED: <CircleDot size={10} />,
-    IN_PROGRESS: <Loader2 size={10} className="animate-spin" />,
-    COMPLETED: <CheckCircle2 size={10} />,
-    COMPENSATING: <RotateCcw size={10} className="animate-spin" />,
-    COMPENSATED: <RotateCcw size={10} />,
-    FAILED: <XCircle size={10} />,
-  };
-  const friendly: Record<string, string> = {
-    STARTED: "Started",
-    IN_PROGRESS: "In Progress",
-    COMPLETED: "Completed",
-    COMPENSATING: "Rolling Back",
-    COMPENSATED: "Rolled Back",
-    FAILED: "Failed",
-  };
-
-  return (
-    <motion.div
-      key={state}
-      initial={{ scale: 0.85, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold"
-      style={{ background: `${color}15`, border: `1px solid ${color}35`, color }}
-    >
-      {icons[state] ?? <CircleDot size={10} />}
-      {friendly[state] ?? state.replace("_", " ")}
-    </motion.div>
-  );
-}
-
-// ─── Rollback Ripple ──────────────────────────────────────────────────────────
-
-function RollbackRipple({ active }: { active: boolean }) {
-  if (!active) return null;
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden"
-    >
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          className="absolute inset-0 rounded-2xl border border-orange-500/20"
-          initial={{ scale: 0.9, opacity: 0.5 }}
-          animate={{ scale: 1.6, opacity: 0 }}
-          transition={{
-            repeat: Infinity,
-            duration: 2.4,
-            delay: i * 0.8,
-            ease: "easeOut",
-          }}
-        />
-      ))}
-    </motion.div>
-  );
-}
-
-// ─── Main Component ────────────────────────────────────────────────────────────
-
-export function SagaTransactionMonitor({
-  executionId,
-  apiBase = "",
-  pollIntervalMs = 2000,
-}: Props) {
+export function SagaTransactionMonitor({ executionId, apiBase = "", pollIntervalMs = 2000 }: Props) {
   const [data, setData] = useState<SagaStatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [simulatingFailure, setSimulatingFailure] = useState(false);
+  const [simulating, setSimulating] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const consecutiveErrors = useRef(0);
+  const failCount = useRef(0);
 
-  const isCompensating =
-    data?.sagaState === "COMPENSATING" || data?.sagaState === "COMPENSATED";
-  const isTerminal =
-    data?.sagaState === "COMPLETED" ||
-    data?.sagaState === "FAILED" ||
-    data?.sagaState === "COMPENSATED";
-
-  const committedCount =
-    data?.steps.filter((s) => s.stepState === "COMMITTED").length ?? 0;
-  const totalCount = data?.steps.length ?? 0;
-  const progressPct = totalCount > 0 ? (committedCount / totalCount) * 100 : 0;
+  const isTerminal = data?.sagaState === "COMPLETED" || data?.sagaState === "FAILED" || data?.sagaState === "COMPENSATED";
+  const isCompensating = data?.sagaState === "COMPENSATING" || data?.sagaState === "COMPENSATED";
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(
-        `${apiBase}/api/v1/saga/execution/${executionId}/status`
-      );
+      const res = await fetch(`${apiBase}/api/v1/saga/execution/${executionId}/status`);
       if (res.status === 404) {
-        setNotFound(true);
-        setLoading(false);
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
+        setNotFound(true); setLoading(false);
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
         return;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setData(await res.json());
-      setError(null);
-      consecutiveErrors.current = 0;
-    } catch (e: any) {
-      consecutiveErrors.current += 1;
-      if (consecutiveErrors.current >= 3) {
-        setError(`Connection lost: ${e.message}`);
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
+      setData(await res.json()); setError(null); failCount.current = 0;
+    } catch (e: unknown) {
+      failCount.current += 1;
+      if (failCount.current >= 3) {
+        setError(`Connection failed after 3 attempts. Backend reachable?`);
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
       }
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [executionId, apiBase]);
 
   useEffect(() => {
-    setLoading(true);
-    fetchStatus();
-    if (!isTerminal) {
-      intervalRef.current = setInterval(fetchStatus, pollIntervalMs);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [fetchStatus, isTerminal, pollIntervalMs]);
+    setLoading(true); fetchStatus();
+    if (!isTerminal) intervalRef.current = setInterval(fetchStatus, pollIntervalMs);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchStatus]);
 
   useEffect(() => {
-    if (isTerminal && intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    if (isTerminal && intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
   }, [isTerminal]);
 
-  const handleSimulateFailure = async (nodeId: string) => {
-    setSimulatingFailure(true);
+  const handleSimFail = async (nodeId: string) => {
+    setSimulating(true);
     try {
-      await fetch(
-        `${apiBase}/api/v1/saga/execution/${executionId}/simulate-failure?nodeId=${nodeId}&reason=demo`,
-        { method: "POST" }
-      );
+      await fetch(`${apiBase}/api/v1/saga/execution/${executionId}/simulate-failure?nodeId=${nodeId}&reason=Professor+demo`, { method: "POST" });
       await fetchStatus();
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setSimulatingFailure(false);
-    }
+    } finally { setSimulating(false); }
   };
 
+  // Total saga wall time for bar scaling
+  const totalMs = data?.steps.reduce((acc, s) => acc + (s.durationMs ?? 0), 0) ?? 0;
+  const committedCount = data?.steps.filter(s => s.stepState === "COMMITTED").length ?? 0;
+  const totalCount = data?.steps.length ?? 0;
+
   return (
-    <div
-      className="relative h-full flex flex-col overflow-hidden scale-[1.03] origin-top"
-      style={{ background: "transparent" }}
-    >
-      <AnimatePresence>{isCompensating && <RollbackRipple active />}</AnimatePresence>
+    <div className="h-full flex flex-col text-white overflow-hidden"
+      style={{ background: "linear-gradient(160deg,#070810 0%,#0a0c18 100%)", fontFamily: "'Inter',sans-serif", position: "relative" }}>
+
+      {/* Compensation glow overlay */}
+      <AnimatePresence>
+        {isCompensating && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 pointer-events-none rounded-3xl overflow-hidden"
+            style={{ zIndex: 0 }}>
+            {[0,1,2].map(i => (
+              <motion.div key={i} className="absolute inset-0 rounded-3xl"
+                style={{ border: "2px solid rgba(249,115,22,0.3)" }}
+                initial={{ scale: 0.95, opacity: 0.5 }}
+                animate={{ scale: 1.05, opacity: 0 }}
+                transition={{ repeat: Infinity, duration: 2.5, delay: i * 0.8, ease: "easeOut" }} />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
-      <div className="relative flex items-center justify-between px-5 py-3.5">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{
-              background: isCompensating
-                ? "rgba(249,115,22,0.1)"
-                : "rgba(139,92,246,0.1)",
-              border: `1px solid ${
-                isCompensating
-                  ? "rgba(249,115,22,0.2)"
-                  : "rgba(139,92,246,0.2)"
-              }`,
-            }}
-          >
-            <Activity
-              size={14}
-              className={isCompensating ? "text-orange-400" : "text-violet-400"}
-            />
-          </div>
-          <div>
-            <p className="text-[13px] font-semibold text-white/70">
-              Transaction Monitor
-            </p>
-            <p className="text-[10px] text-white/25">Live step tracking</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {data && (
-            <div
-              className="flex items-center gap-1 text-[10px]"
-              style={{
-                color: isTerminal ? "rgba(255,255,255,0.2)" : "#4ade80",
-              }}
-            >
-              {isTerminal ? (
-                <WifiOff size={10} />
-              ) : (
-                <motion.div
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                >
-                  <Wifi size={10} />
-                </motion.div>
-              )}
-              <span>{isTerminal ? "Stopped" : "Live"}</span>
+      <div className="relative flex items-center justify-between px-5 py-3.5 flex-shrink-0"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div>
+          <div className="flex items-center gap-2">
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isCompensating ? "bg-orange-500/20" : "bg-violet-500/20"}`}>
+              <Activity size={13} className={isCompensating ? "text-orange-400" : "text-violet-400"} />
             </div>
-          )}
-
-          {data && <StatusBadge state={data.sagaState} color={data.sagaColor} />}
-
-          <button
-            onClick={() => {
-              setLoading(true);
-              fetchStatus();
-            }}
-            disabled={loading}
-            className="p-1.5 rounded-xl transition-all disabled:opacity-40 hover:scale-105"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.07)",
-            }}
-          >
-            <RefreshCw
-              size={13}
-              className={`text-white/40 ${loading ? "animate-spin" : ""}`}
-            />
-          </button>
+            <span className="text-sm font-semibold text-white/80">Distributed Execution Trace</span>
+            {data && (
+              <motion.span key={data.sagaState}
+                initial={{ scale: 0.8 }} animate={{ scale: 1 }}
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: `${data.sagaColor}18`, color: data.sagaColor }}>
+                {data.sagaState}
+              </motion.span>
+            )}
+          </div>
+          <div className="text-[10px] text-white/20 mt-0.5 font-mono">exec: {executionId.slice(0,12)}…</div>
         </div>
+        <button onClick={() => { setLoading(true); fetchStatus(); }} disabled={loading}
+          className="p-1.5 rounded-lg transition-colors text-white/25 hover:text-white/60 hover:bg-white/5">
+          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+        </button>
       </div>
 
-      {/* Progress — thin, elegant */}
+      {/* ACID progress bar */}
       {data && totalCount > 0 && (
-        <div className="px-5 pb-2 flex-shrink-0">
-          <div className="flex justify-between text-[10px] text-white/20 mb-1">
-            <span>Progress</span>
-            <span className="font-mono">
-              {committedCount}/{totalCount}
-            </span>
+        <div className="px-5 pt-3 pb-2 flex-shrink-0">
+          <div className="flex justify-between text-[10px] text-white/30 mb-1.5">
+            <span>ACID Commit Progress</span>
+            <span className="font-mono">{committedCount}/{totalCount} committed</span>
           </div>
-          <div
-            className="h-1 rounded-full overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.04)" }}
-          >
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
             <motion.div
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.4 }}
+              animate={{ width: `${(committedCount / totalCount) * 100}%` }}
+              transition={{ duration: 0.5 }}
               className="h-full rounded-full"
-              style={{
-                background: isCompensating
-                  ? "linear-gradient(90deg, #c2410c, #fb923c)"
-                  : "linear-gradient(90deg, #7c3aed, #06b6d4)",
-              }}
-            />
+              style={{ background: isCompensating
+                ? "linear-gradient(90deg,#f97316,#fb923c)"
+                : "linear-gradient(90deg,#8b5cf6,#22c55e)" }} />
           </div>
         </div>
       )}
 
       {/* Content */}
-      <div className="relative flex-1 overflow-auto px-5 pb-5 space-y-3.5">
-        {/* Loading */}
+      <div className="flex-1 overflow-auto px-5 pb-5 relative">
+
         {loading && !data && (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
-              className="w-8 h-8 rounded-full border-2 border-t-transparent"
-              style={{
-                borderColor: "rgba(139,92,246,0.2)",
-                borderTopColor: "#8b5cf6",
-              }}
-            />
-            <p className="text-[12px] text-white/20">Connecting…</p>
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
+            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+              className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full" />
+            <p className="text-sm">Connecting to Saga Monitor…</p>
           </div>
         )}
 
-        {/* Error */}
         {error && (
-          <div
-            className="flex items-center gap-2.5 rounded-2xl px-4 py-3"
-            style={{
-              background: "rgba(239,68,68,0.06)",
-              border: "1px solid rgba(239,68,68,0.18)",
-            }}
-          >
-            <AlertTriangle size={13} className="text-red-400 flex-shrink-0" />
-            <p className="text-[12px] text-red-300">{error}</p>
+          <div className="flex items-start gap-3 mt-4 p-4 rounded-xl"
+            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+            <AlertTriangle size={14} className="text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-red-300">{error}</p>
+              <p className="text-[11px] text-red-600 mt-1">Is <code className="text-red-400">/api/v1/saga/**</code> in SecurityConfig permitAll()?</p>
+            </div>
           </div>
         )}
 
-        {/* Not found */}
+        {/* Not wired yet state */}
         {notFound && (
-          <div className="flex flex-col items-center justify-center py-20 gap-4 text-center px-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{ background: "rgba(255,255,255,0.03)" }}
-            >
-              <Database size={20} className="text-white/15" />
+          <div className="flex flex-col items-center justify-center py-12 gap-4 px-4">
+            <div className="p-4 rounded-2xl" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)" }}>
+              <Activity size={28} className="text-violet-500/40 mx-auto" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-white/40">
-                No transaction data yet
-              </p>
-              <p className="text-[10px] text-white/20 mt-1.5 leading-relaxed">
-                Monitoring activates automatically when this workflow runs.
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-white/50">Saga not yet started for this execution</p>
+              <p className="text-[11px] text-white/25 leading-relaxed">
+                The infrastructure is built. Wire it into<br />
+                <code className="text-violet-400">DistributedWorkflowCoordinator</code>:
               </p>
             </div>
-          </div>
-        )}
-
-        {/* Data */}
-        {data && (
-          <>
-            {/* Alert banners — non-boxy, full-radius pill */}
-            <AnimatePresence>
-              {isCompensating && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  className="flex items-center gap-3 rounded-2xl px-4 py-3"
-                  style={{
-                    background: "rgba(249,115,22,0.06)",
-                    border: "1px solid rgba(249,115,22,0.2)",
-                  }}
-                >
-                  <RotateCcw
-                    size={14}
-                    className="text-orange-400 flex-shrink-0 animate-spin"
-                  />
-                  <div>
-                    <p className="text-[12px] font-semibold text-orange-300">
-                      Rolling Back
-                    </p>
-                    <p className="text-[10px] text-white/30 mt-0.5">
-                      Undoing completed steps in reverse order to keep your data
-                      consistent.
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {data.sagaState === "COMPLETED" && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-3 rounded-2xl px-4 py-3"
-                style={{
-                  background: "rgba(6,182,212,0.06)",
-                  border: "1px solid rgba(6,182,212,0.18)",
-                }}
-              >
-                <CheckCircle2
-                  size={14}
-                  className="text-cyan-400 flex-shrink-0"
-                />
-                <div>
-                  <p className="text-[12px] font-semibold text-cyan-300">
-                    All Steps Done
-                  </p>
-                  <p className="text-[10px] text-white/30 mt-0.5">
-                    Every step finished successfully.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Summary metrics — horizontal strip */}
-            <div className="flex gap-2 overflow-x-auto pb-0.5">
-              {[
-                {
-                  label: "Total",
-                  value: totalCount,
-                  color: "rgba(255,255,255,0.4)",
-                  icon: <Clock size={11} />,
-                },
-                {
-                  label: "Done",
-                  value: committedCount,
-                  color: "#22d3ee",
-                  icon: <CheckCircle2 size={11} />,
-                },
-                {
-                  label: "Failed",
-                  value: data.steps.filter(
-                    (s) =>
-                      s.stepState === "FAILED" || s.stepState === "COMPENSATED"
-                  ).length,
-                  color: "#f87171",
-                  icon: <XCircle size={11} />,
-                },
-              ].map((s) => (
-                <div
-                  key={s.label}
-                  className="flex-shrink-0 flex flex-col items-center gap-1 px-4 py-2.5 rounded-2xl"
-                  style={{ background: "rgba(255,255,255,0.025)", minWidth: 72 }}
-                >
-                  <span style={{ color: s.color }}>{s.icon}</span>
-                  <span
-                    className="text-lg font-bold font-mono leading-none"
-                    style={{ color: s.color }}
-                  >
-                    {s.value}
-                  </span>
-                  <span className="text-[9px] text-white/20">{s.label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Timeline */}
-            <div>
-              <p className="text-[9px] font-semibold text-white/20 uppercase tracking-widest mb-3">
-                Steps
-              </p>
-
-              <div className="relative">
-                <div
-                  className="absolute left-[19px] top-3 bottom-3 w-px"
-                  style={{ background: "rgba(255,255,255,0.05)" }}
-                />
-
-                <div className="space-y-2 pl-10">
-                  {data.steps.map((step, i) => (
-                    <div key={step.stepId} className="relative">
-                      <motion.div
-                        className="absolute -left-[30px] top-[14px] w-2.5 h-2.5 rounded-full"
-                        animate={{ backgroundColor: step.color }}
-                        style={{
-                          backgroundColor: step.color,
-                          border: "2px solid #07090e",
-                        }}
-                      />
-                      {i < data.steps.length - 1 && (
-                        <div className="absolute -left-[26px] top-8 text-white/10">
-                          <ArrowDown size={8} />
-                        </div>
-                      )}
-
-                      <StepCard
-                        step={step}
-                        isActive={data.currentStep === step.nodeId}
-                      />
-
-                      {step.stepState === "COMMITTED" && !isTerminal && (
-                        <button
-                          onClick={() => handleSimulateFailure(step.nodeId)}
-                          disabled={simulatingFailure}
-                          className="mt-1 flex items-center gap-1 text-[9px] transition-colors disabled:opacity-40"
-                          style={{ color: "rgba(239,68,68,0.35)" }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.color = "rgba(239,68,68,0.7)")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.color = "rgba(239,68,68,0.35)")
-                          }
-                        >
-                          <Zap size={7} />
-                          Simulate failure here
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+            <div className="w-full rounded-xl overflow-hidden text-[11px] font-mono"
+              style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="px-3 py-2 text-white/15 text-[9px] uppercase tracking-widest"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>startWorkflowExecution()</div>
+              <div className="px-3 py-3 space-y-1">
+                <div className="text-white/25">{"// 1. Start the saga"}</div>
+                <div className="text-violet-400">sagaCoordinator.startSaga(executionId, workflowId);</div>
+                <div className="text-white/25 mt-2">{"// 2. After each node completes:"}</div>
+                <div className="text-emerald-400">sagaCoordinator.commitStep(sagaId, nodeId, outputJson);</div>
+                <div className="text-white/25 mt-2">{"// 3. On failure:"}</div>
+                <div className="text-red-400">sagaCoordinator.failStepAndCompensate(sagaId, nodeId, err);</div>
               </div>
             </div>
-          </>
+          </div>
         )}
+
+        {/* Compensation alert */}
+        <AnimatePresence>
+          {isCompensating && data && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="mb-4 mt-2 flex items-start gap-3 p-4 rounded-xl"
+              style={{ background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.3)" }}>
+              <RotateCcw size={15} className="text-orange-400 flex-shrink-0 mt-0.5 animate-spin" />
+              <div>
+                <p className="text-sm font-semibold text-orange-300">Compensation Cascade Active</p>
+                <p className="text-[11px] text-orange-500/70 mt-0.5">
+                  Rolling back committed steps in reverse topological order via stored compensating transactions.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Trace timeline */}
+        {data && data.steps.length > 0 && (
+          <div className="mt-2">
+            {/* Column headers */}
+            <div className="flex items-center gap-3 px-3 mb-2 text-[9px] text-white/20 uppercase tracking-widest">
+              <span className="w-3" />
+              <span className="w-4" /><span className="flex-1">Node</span>
+              <span className="w-24">Duration</span>
+              <span className="w-14 text-right">Time</span>
+              <span className="w-20 text-right">State</span>
+              <span className="w-4" />
+            </div>
+
+            {data.steps.map(step => (
+              <StepTraceEntry key={step.stepId} step={step}
+                totalDurationMs={totalMs}
+                isActive={data.currentStep === step.nodeId}
+                onSimulateFail={handleSimFail}
+                canSimulate={!isTerminal && !simulating} />
+            ))}
+          </div>
+        )}
+
+        {/* Narrative */}
+        {data && (
+          <div className="mt-4 rounded-xl p-4"
+            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div className="text-[9px] text-white/20 uppercase tracking-widest mb-2">System Narrative</div>
+            <p className="text-[12px] text-white/50 leading-relaxed">{data.sagaNarrative}</p>
+          </div>
+        )}
+
+        {/* ACID breakdown (always visible) */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {[
+            { letter: "A", title: "Atomicity", color: "#3b82f6",
+              body: "Each step + its Kafka event written in ONE transaction via Outbox Pattern." },
+            { letter: "C", title: "Consistency", color: "#22c55e",
+              body: "DB trigger fn_sync_saga_state() keeps saga state deterministic from step states." },
+            { letter: "I", title: "Isolation", color: "#8b5cf6",
+              body: "@Version optimistic locking prevents concurrent lost-update anomalies." },
+            { letter: "D", title: "Durability", color: "#f59e0b",
+              body: "Compensation payloads persisted pre-execution. Replayable after any crash." },
+          ].map(t => (
+            <div key={t.letter} className="rounded-xl p-3"
+              style={{ background: `${t.color}08`, border: `1px solid ${t.color}18` }}>
+              <div className="text-[10px] font-bold mb-1" style={{ color: t.color }}>{t.letter} — {t.title}</div>
+              <p className="text-[10px] text-white/35 leading-relaxed">{t.body}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

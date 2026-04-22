@@ -403,11 +403,13 @@ function MyWorkflowsBrowser({
   onClose,
   sidebarRef,
   onLoad,
+  onAfterClearAll,
 }: {
   isOpen: boolean;
   onClose: () => void;
   sidebarRef: React.RefObject<HTMLDivElement | null>;
   onLoad: (id: string) => Promise<void>;
+  onAfterClearAll?: () => void;
 }) {
   const [workflows, setWorkflows] = useState<WorkflowListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -415,7 +417,7 @@ function MyWorkflowsBrowser({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { currentWorkflowId } = useWorkflow();
+  const { currentWorkflowId, setCurrentWorkflowId } = useWorkflow();
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -470,6 +472,22 @@ function MyWorkflowsBrowser({
     }
   };
 
+  const handleClearAll = async () => {
+    if (!window.confirm(`Delete all ${workflows.length} workflows? This cannot be undone.`)) return;
+    setLoading(true);
+    try {
+      await Promise.all(workflows.map(w => deleteWorkflow(w.id)));
+      setWorkflows([]);
+      // Reset context so the next Save creates a new workflow instead of trying to PUT a deleted one
+      setCurrentWorkflowId(null);
+      onAfterClearAll?.();
+    } catch {
+      setError("Some workflows could not be deleted");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -488,6 +506,16 @@ function MyWorkflowsBrowser({
           <h3 className="text-sm font-semibold text-white leading-none">My Workflows</h3>
           <p className="text-[10px] text-white/40 mt-0.5">{workflows.length} saved workflows</p>
         </div>
+        {workflows.length > 0 && (
+          <button
+            onClick={handleClearAll}
+            disabled={loading}
+            className="text-[10px] px-2 py-1 rounded-lg text-red-400/50 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+            title="Delete all workflows"
+          >
+            Clear all
+          </button>
+        )}
         <button onClick={loadList} className="p-1.5 text-white/30 hover:text-white/70 hover:bg-white/5 rounded-lg transition-colors" title="Refresh">
           <RefreshCw className="w-3.5 h-3.5" />
         </button>
@@ -614,6 +642,7 @@ export function AppSidebar() {
     setReturnVariableTags,
     removeReturnVariable,
     clearReturnVariables,
+    setCurrentWorkflowId,
   } = useWorkflow();
 
   const [isRunning, setIsRunning] = useState(false);
@@ -955,6 +984,7 @@ export function AppSidebar() {
         onClose={() => setShowMyWorkflows(false)}
         sidebarRef={sidebarRef}
         onLoad={loadWorkflowHook}
+        onAfterClearAll={() => setWorkflowId(null)}
       />
     </div>
   );

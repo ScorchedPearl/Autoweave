@@ -61,19 +61,28 @@ public class SagaMonitorController {
 
     private SagaStatusResponse toStatusResponse(SagaInstance saga, List<SagaStep> steps) {
         List<StepStatus> stepStatuses = steps.stream()
-                .map(s -> new StepStatus(
-                        s.getStepId(),
-                        s.getNodeId(),
-                        s.getNodeType(),
-                        s.getStepOrder(),
-                        s.getStepState(),
-                        nodeColor(s.getStepState()),
-                        s.getStartedAt() != null ? s.getStartedAt().toString() : null,
-                        s.getCompletedAt() != null ? s.getCompletedAt().toString() : null,
-                        s.getCompensatedAt() != null ? s.getCompensatedAt().toString() : null,
-                        s.getErrorMessage(),
-                        s.getCompensationPayload() != null
-                ))
+                .map(s -> {
+                    long durationMs = 0;
+                    if (s.getStartedAt() != null && s.getCompletedAt() != null) {
+                        durationMs = s.getCompletedAt().toEpochMilli() - s.getStartedAt().toEpochMilli();
+                    }
+                    return new StepStatus(
+                            s.getStepId(),
+                            s.getNodeId(),
+                            s.getNodeType(),
+                            s.getStepOrder(),
+                            s.getStepState(),
+                            nodeColor(s.getStepState()),
+                            s.getStartedAt() != null ? s.getStartedAt().toString() : null,
+                            s.getCompletedAt() != null ? s.getCompletedAt().toString() : null,
+                            s.getCompensatedAt() != null ? s.getCompensatedAt().toString() : null,
+                            s.getErrorMessage(),
+                            s.getCompensationPayload() != null,
+                            s.getOutputSnapshot(),
+                            s.getCompensationPayload(),
+                            durationMs
+                    );
+                })
                 .collect(Collectors.toList());
 
         return new SagaStatusResponse(
@@ -162,6 +171,9 @@ public class SagaMonitorController {
             String completedAt,
             String compensatedAt,
             String errorMessage,
-            boolean hasCompensation
+            boolean hasCompensation,
+            String outputSnapshot,       
+            String compensationPayload,  
+            long durationMs      
     ) {}
 }
