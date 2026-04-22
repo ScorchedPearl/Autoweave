@@ -104,14 +104,14 @@ export default function WorkflowDemo() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.08] mb-5"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-5"
           >
             <motion.div
               className="w-2 h-2 bg-cyan-400 rounded-full"
               animate={{ scale: [1, 1.4, 1], opacity: [1, 0.55, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             />
-            <span className="text-sm text-white/50">Interactive demo</span>
+            <span className="text-sm text-muted-foreground">Interactive demo</span>
           </motion.div>
 
           <motion.h2
@@ -119,7 +119,7 @@ export default function WorkflowDemo() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.08, duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="text-4xl md:text-5xl font-bold text-white mb-4"
+            className="text-4xl md:text-5xl font-bold text-foreground mb-4"
           >
             Watch automation{" "}
             <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
@@ -132,7 +132,7 @@ export default function WorkflowDemo() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.15, duration: 0.5 }}
-            className="text-white/40 text-lg max-w-xl mx-auto"
+            className="text-muted-foreground text-lg max-w-xl mx-auto"
           >
             A real order-processing workflow — trigger to completion in under 2 seconds.
           </motion.p>
@@ -144,16 +144,16 @@ export default function WorkflowDemo() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-          className="rounded-2xl border border-white/[0.07] overflow-hidden"
+          className="rounded-2xl border border-border overflow-hidden"
         >
           {/* ── Shared titlebar ── */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-[#080b14] border-b border-white/[0.06]">
+          <div className="flex items-center gap-2 px-4 py-3 bg-card border-b border-border">
             <div className="flex gap-1.5">
               <div className="w-3 h-3 rounded-full bg-[#FF5F57]" />
               <div className="w-3 h-3 rounded-full bg-[#FEBC2E]" />
               <div className="w-3 h-3 rounded-full bg-[#28C840]" />
             </div>
-            <span className="ml-3 text-white/20 text-xs font-mono">
+            <span className="ml-3 text-muted-foreground text-xs font-mono">
               order-processing.awf — AutoWeave
             </span>
             <div className="ml-auto flex items-center gap-2">
@@ -165,7 +165,7 @@ export default function WorkflowDemo() {
                 }}
                 transition={{ duration: 2, repeat: running ? Infinity : 0, ease: "easeInOut" }}
               />
-              <span className="text-white/22 text-xs">{running ? "Running" : "Paused"}</span>
+              <span className="text-muted-foreground text-xs">{running ? "Running" : "Paused"}</span>
             </div>
           </div>
 
@@ -173,11 +173,11 @@ export default function WorkflowDemo() {
           <div className="flex min-h-[480px]">
 
             {/* ── LEFT SIDEBAR ── */}
-            <div className="hidden lg:flex flex-col w-[210px] flex-shrink-0 bg-[#07090e] border-r border-white/[0.05]">
+            <div className="hidden lg:flex flex-col w-[210px] flex-shrink-0 bg-card border-r border-border">
 
               {/* Sidebar header */}
-              <div className="px-4 pt-4 pb-3 border-b border-white/[0.05]">
-                <p className="text-[10px] font-semibold text-white/28 uppercase tracking-widest mb-1.5">
+              <div className="px-4 pt-4 pb-3 border-b border-border">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">
                   Execution steps
                 </p>
                 <AnimatePresence mode="wait">
@@ -187,7 +187,7 @@ export default function WorkflowDemo() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="text-sm font-medium text-white/75 leading-snug"
+                    className="text-sm font-medium text-muted-foreground leading-snug"
                   >
                     {current.label}
                   </motion.p>
@@ -198,7 +198,7 @@ export default function WorkflowDemo() {
               <div className="flex-1 py-4 relative">
                 {/* Vertical guide line */}
                 <div
-                  className="absolute top-7 bottom-7 w-px bg-white/[0.05]"
+                  className="absolute top-7 bottom-7 w-px bg-secondary"
                   style={{ left: "27px" }}
                 />
 
@@ -232,7 +232,7 @@ export default function WorkflowDemo() {
                           transition={{ duration: 0.3 }}
                         >
                           {isDone && (
-                            <Check className="w-2.5 h-2.5 text-white/40" />
+                            <Check className="w-2.5 h-2.5 text-muted-foreground" />
                           )}
                           {isCurrent && (
                             <motion.div
@@ -242,7 +242,7 @@ export default function WorkflowDemo() {
                             />
                           )}
                           {isPending && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/[0.08]" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-secondary" />
                           )}
                         </motion.div>
                       </div>
@@ -271,7 +271,7 @@ export default function WorkflowDemo() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -4 }}
                               transition={{ duration: 0.22, ease: "easeOut" }}
-                              className="text-[10px] text-white/32 mt-1.5 leading-relaxed"
+                              className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed"
                             >
                               {s.desc}
                             </motion.p>
@@ -284,7 +284,7 @@ export default function WorkflowDemo() {
               </div>
 
               {/* Controls pinned to bottom */}
-              <div className="px-4 py-4 border-t border-white/[0.05] flex gap-2">
+              <div className="px-4 py-4 border-t border-border flex gap-2">
                 <button
                   onClick={() => setRunning(r => !r)}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-cyan-500 text-black text-xs font-bold hover:bg-cyan-400 transition-colors duration-150"
@@ -296,7 +296,7 @@ export default function WorkflowDemo() {
                 </button>
                 <button
                   onClick={() => { setStep(0); setRunning(true); }}
-                  className="w-9 flex items-center justify-center rounded-lg bg-white/[0.05] text-white/45 hover:bg-white/[0.1] hover:text-white transition-all duration-150"
+                  className="w-9 flex items-center justify-center rounded-lg bg-secondary text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-150"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -424,7 +424,7 @@ export default function WorkflowDemo() {
                           >
                             {node.label}
                           </motion.span>
-                          <span className="text-[9px] text-white/22 relative z-10">{node.sub}</span>
+                          <span className="text-[9px] text-muted-foreground relative z-10">{node.sub}</span>
                         </motion.div>
                       </div>
                     );
@@ -433,8 +433,8 @@ export default function WorkflowDemo() {
               </div>
 
               {/* Canvas footer: progress */}
-              <div className="px-5 py-3 border-t border-white/[0.04] flex items-center gap-3">
-                <span className="text-white/20 text-xs font-mono tabular-nums">
+              <div className="px-5 py-3 border-t border-border flex items-center gap-3">
+                <span className="text-muted-foreground text-xs font-mono tabular-nums">
                   {step + 1}/{STEPS.length}
                 </span>
                 <div className="flex-1 flex gap-1">
@@ -447,13 +447,13 @@ export default function WorkflowDemo() {
                     />
                   ))}
                 </div>
-                <span className="text-white/20 text-xs font-mono">
+                <span className="text-muted-foreground text-xs font-mono">
                   {step === STEPS.length - 1 ? "1.8s elapsed" : `step ${step + 1}`}
                 </span>
               </div>
 
               {/* Mobile-only controls (sidebar hidden on mobile) */}
-              <div className="flex lg:hidden items-center gap-2 px-5 py-3 border-t border-white/[0.04]">
+              <div className="flex lg:hidden items-center gap-2 px-5 py-3 border-t border-border">
                 <button
                   onClick={() => setRunning(r => !r)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-cyan-500 text-black text-xs font-bold hover:bg-cyan-400 transition-colors"
@@ -462,11 +462,11 @@ export default function WorkflowDemo() {
                 </button>
                 <button
                   onClick={() => { setStep(0); setRunning(true); }}
-                  className="p-2 rounded-lg bg-white/[0.05] text-white/40 hover:bg-white/[0.1] transition-all"
+                  className="p-2 rounded-lg bg-secondary text-muted-foreground hover:bg-secondary transition-all"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
-                <span className="ml-auto text-white/25 text-xs font-medium">{current.label}</span>
+                <span className="ml-auto text-muted-foreground text-xs font-medium">{current.label}</span>
               </div>
             </div>
           </div>
@@ -480,7 +480,7 @@ export default function WorkflowDemo() {
           transition={{ delay: 0.12, duration: 0.5 }}
           className="text-center mt-12"
         >
-          <p className="text-white/28 text-sm mb-5">Build workflows like this in minutes, not days.</p>
+          <p className="text-muted-foreground text-sm mb-5">Build workflows like this in minutes, not days.</p>
           <Link
             href="/auth"
             className="inline-flex items-center gap-2 px-8 py-3.5 bg-cyan-500 text-black rounded-xl font-bold hover:bg-cyan-400 transition-all duration-200 hover:scale-[1.03] shadow-lg shadow-cyan-500/20"

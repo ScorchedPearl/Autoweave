@@ -220,7 +220,7 @@ const Hero = () => {
   return (
     <section
       id="hero"
-      className="relative min-h-screen bg-black overflow-hidden flex items-center"
+      className="relative min-h-screen bg-background overflow-hidden flex items-center"
     >
       {/* Static background grid */}
       <div className="absolute inset-0 pointer-events-none">
@@ -251,14 +251,14 @@ const Hero = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.09] mb-8"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8"
             >
               <motion.div
                 className="w-2 h-2 bg-green-400 rounded-full"
                 animate={{ scale: [1, 1.45, 1], opacity: [1, 0.7, 1] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               />
-              <span className="text-sm text-white/60">Live and in production</span>
+              <span className="text-sm text-muted-foreground">Live and in production</span>
             </motion.div>
 
             <motion.h1
@@ -267,14 +267,14 @@ const Hero = () => {
               transition={{ delay: 0.1, duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
               className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.05]"
             >
-              <span className="text-white">Build Agentic</span>
+              <span className="text-foreground">Build Agentic</span>
               <br />
-              <span className="bg-gradient-to-r from-cyan-400 via-cyan-200 to-purple-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-cyan-500 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
                 {word}
-                <span className="typewriter-cursor text-cyan-400" aria-hidden>|</span>
+                <span className="typewriter-cursor text-cyan-500" aria-hidden>|</span>
               </span>
               <br />
-              <span className="text-white/32 text-3xl md:text-4xl lg:text-[2.6rem] font-semibold leading-snug">
+              <span className="text-muted-foreground text-3xl md:text-4xl lg:text-[2.6rem] font-semibold leading-snug">
                 without a line of code
               </span>
             </motion.h1>
@@ -283,7 +283,7 @@ const Hero = () => {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.28, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-              className="text-lg text-white/52 mb-10 max-w-lg leading-relaxed"
+              className="text-lg text-muted-foreground mb-10 max-w-lg leading-relaxed"
             >
               Deploy autonomous AI agents that think, decide, and execute complex tasks.
               Visual workflow builder for modern teams who move fast.
@@ -298,7 +298,7 @@ const Hero = () => {
               <Link href="/auth">
                 <Button
                   size="lg"
-                  className="group bg-cyan-500 text-black hover:bg-cyan-400 px-8 py-6 text-base rounded-xl font-bold transition-all duration-250 hover:scale-[1.03] shadow-lg shadow-cyan-500/20"
+                  className="group bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base rounded-xl font-bold transition-all duration-250 hover:scale-[1.03] shadow-lg shadow-primary/20"
                 >
                   Start building free
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-0.5 transition-transform duration-200" />
@@ -308,7 +308,7 @@ const Hero = () => {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border border-white/[0.14] text-white hover:bg-white/[0.05] hover:border-white/[0.25] px-8 py-6 text-base rounded-xl transition-all duration-250 bg-transparent"
+                  className="border border-border text-foreground hover:bg-secondary hover:border-foreground/20 px-8 py-6 text-base rounded-xl transition-all duration-250 bg-transparent"
                 >
                   <Play className="mr-2 w-4 h-4" />
                   Live playground
@@ -328,8 +328,8 @@ const Hero = () => {
                 { value: "99.9%", label: "uptime" },
               ].map(s => (
                 <div key={s.label}>
-                  <div className="text-2xl font-bold text-white tracking-tight">{s.value}</div>
-                  <div className="text-xs text-white/32 mt-0.5">{s.label}</div>
+                  <div className="text-2xl font-bold text-foreground tracking-tight">{s.value}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
                 </div>
               ))}
             </motion.div>
@@ -347,7 +347,7 @@ const Hero = () => {
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-gray-950 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none" />
     </section>
   );
 };
