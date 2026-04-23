@@ -19,6 +19,7 @@ import {
   Zap,
   RefreshCw,
   AlertCircle,
+  PenLine,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -35,8 +36,8 @@ import { useSaveWorkflow } from "@/hooks/useSaveWorkflow"
 import { useLoadWorkflow } from "@/hooks/useLoadWorkflow"
 import { NODE_OUTPUT_REGISTRY, NodeOutputVar } from "@/lib/nodeOutputRegistry"
 import { fetchWorkflows, deleteWorkflow, WorkflowListItem } from "@/lib/api"
-import { PerformancePanelButton } from "@/components/PerformancePanel"
 import { jwtDecode } from "jwt-decode"
+import { useFlowState } from "./../../../provider/flowstatecontext"
 
 function getOwnerIdFromJwt(): string | null {
   try {
@@ -203,9 +204,6 @@ function ReturnVariablesBrowser({
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/4 transition-colors text-left"
                     style={{ background: "rgba(255,255,255,0.03)" }}
                   >
-                    <span className="text-base flex-shrink-0">
-
-                    </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-semibold text-white/80 truncate">{item.nodeLabel}</p>
                       <p className="text-[9px] text-white/35 truncate">{item.nodeType} · {item.vars.length} variables</p>
@@ -243,7 +241,7 @@ function ReturnVariablesBrowser({
                             </span>
                             {isAdded
                               ? <Check className="w-3 h-3 text-cyan-400 flex-shrink-0" />
-                              : <Plus className="w-3 h-3 text-white/20 flex-shrink-0 opacity-0 group-hover:opacity-100" />
+                              : <Plus className="w-3 h-3 text-white/20 flex-shrink-0" />
                             }
                           </button>
                         );
@@ -266,138 +264,7 @@ function ReturnVariablesBrowser({
   );
 }
 
-const COLLAPSE_THRESHOLD = 300;
-
-function ResultEntry({ entryKey, value }: { entryKey: string; value: any }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const { displayValue, valType } = useMemo(() => {
-    let dv = "";
-    let vt = typeof value;
-    if (value === null) { dv = "null"; vt = "null" as typeof vt; }
-    else if (typeof value === "object") { dv = JSON.stringify(value, null, 2); }
-    else { dv = String(value); }
-    return { displayValue: dv, valType: vt };
-  }, [value]);
-
-  const isLong = displayValue.length > COLLAPSE_THRESHOLD;
-  const shown = expanded || !isLong ? displayValue : displayValue.slice(0, COLLAPSE_THRESHOLD) + "…";
-
-  return (
-    <div
-      className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}
-    >
-      <div className="flex justify-between items-center px-3 py-2 border-b border-white/5 bg-white/5">
-        <span className="text-[11px] font-mono text-cyan-300 font-semibold">{entryKey}</span>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/10 text-white/50">{valType}</span>
-          {isLong && (
-            <button
-              onClick={() => setExpanded((v) => !v)}
-              className="text-[8px] px-1.5 py-0.5 rounded bg-cyan-400/10 text-cyan-400 hover:bg-cyan-400/20 transition-colors font-semibold"
-            >
-              {expanded ? "Collapse" : "Expand"}
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="px-3 py-2">
-        <pre className={`text-[10px] text-white/70 font-mono whitespace-pre-wrap break-all overflow-y-auto ${!expanded && isLong ? "max-h-28" : ""}`}>
-          {shown}
-        </pre>
-        {isLong && !expanded && (
-          <button
-            onClick={() => setExpanded(true)}
-            className="mt-1.5 text-[10px] text-cyan-400/70 hover:text-cyan-400 transition-colors"
-          >
-            Show full value ({displayValue.length} chars)
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function WorkflowResultBrowser({
-  isOpen,
-  onClose,
-  sidebarRef,
-  resultData,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  sidebarRef: React.RefObject<HTMLDivElement | null>;
-  resultData: any;
-}) {
-  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
-  useEffect(() => {
-    if (isOpen && sidebarRef.current) {
-      const rect = sidebarRef.current.getBoundingClientRect();
-      setPanelStyle({
-        position: "fixed",
-        top: rect.top,
-        left: rect.right + 8,
-        height: rect.height,
-        width: 320,
-        zIndex: 9999,
-      });
-    }
-  }, [isOpen, sidebarRef]);
-
-  if (!isOpen) return null;
-
-  let resultVars = {};
-  if (resultData && typeof resultData === "object") {
-    resultVars = resultData.data || resultData.variables || resultData.returns || resultData;
-  }
-  const entries = Object.entries(resultVars || {});
-
-  return (
-    <div
-      style={panelStyle}
-      className="flex flex-col rounded-2xl overflow-hidden"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="absolute inset-0 bg-[#080a0f]/90 backdrop-blur-2xl border border-cyan-400/20 rounded-2xl shadow-2xl" style={{ zIndex: -1 }} />
-
-      <div className="relative flex items-center gap-2 px-4 py-3.5 border-b border-white/8 bg-cyan-950/20">
-        <div className="w-7 h-7 rounded-lg bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center flex-shrink-0">
-          <Play className="w-3.5 h-3.5 text-cyan-400" />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-sm font-semibold text-white leading-none">Execution Results</h3>
-          <p className="text-[10px] text-cyan-200/60 mt-0.5">Workflow Returned Variables</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 text-white/30 hover:text-white/70 hover:bg-white/5 rounded-lg transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      <div className="relative flex-1 overflow-y-auto p-3 space-y-2">
-        {entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 py-12 px-6">
-            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-              <Variable className="w-5 h-5 text-white/20" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-white/50 font-medium">No results found</p>
-              <p className="text-[11px] text-white/30 mt-1">Run workflow to see returns</p>
-            </div>
-          </div>
-        ) : (
-          entries.map(([key, value]) => (
-            <ResultEntry key={key} entryKey={key} value={value} />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
+/* ── My Workflows Browser ── */
 function MyWorkflowsBrowser({
   isOpen,
   onClose,
@@ -478,7 +345,6 @@ function MyWorkflowsBrowser({
     try {
       await Promise.all(workflows.map(w => deleteWorkflow(w.id)));
       setWorkflows([]);
-      // Reset context so the next Save creates a new workflow instead of trying to PUT a deleted one
       setCurrentWorkflowId(null);
       onAfterClearAll?.();
     } catch {
@@ -643,66 +509,58 @@ export function AppSidebar() {
     removeReturnVariable,
     clearReturnVariables,
     setCurrentWorkflowId,
+    workflowMetadata,
+    updateWorkflowMetadata,
   } = useWorkflow();
+
+  const {
+    setLastExecution,
+    setWorkflowResult,
+    setShowResultPanel,
+  } = useFlowState();
 
   const [isRunning, setIsRunning] = useState(false);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
   const runWorkflowWithAuth = useRunWorkflow();
   const saveWorkflow = useSaveWorkflow();
-
   const loadWorkflowHook = useLoadWorkflow();
+
   const [showBrowser, setShowBrowser] = useState(false);
-  const [showResultBrowser, setShowResultBrowser] = useState(false);
   const [showMyWorkflows, setShowMyWorkflows] = useState(false);
-  const [workflowResult, setWorkflowResult] = useState<any>(null);
   const sidebarRef = useRef<HTMLDivElement | null>(null);
 
-  const [lastExecution, setLastExecution] = useState<{
-    executionId: string;
-    workflowId: string;
-  } | null>(null);
-
+  /* ── Click-outside to close panels ── */
   useEffect(() => {
-    if (!showBrowser) return;
+    if (!showBrowser && !showMyWorkflows) return;
     const handler = (e: MouseEvent) => {
       if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
         setShowBrowser(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showBrowser]);
-
-  useEffect(() => {
-    if (!showResultBrowser) return;
-    const handler = (e: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
-        setShowResultBrowser(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showResultBrowser]);
-
-  useEffect(() => {
-    if (!showMyWorkflows) return;
-    const handler = (e: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
         setShowMyWorkflows(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [showMyWorkflows]);
+  }, [showBrowser, showMyWorkflows]);
+
+  /* ── Title derived from workflowMetadata ── */
+  const [titleDraft, setTitleDraft] = useState(workflowMetadata?.name ?? "Untitled Workflow");
+  useEffect(() => {
+    setTitleDraft(workflowMetadata?.name ?? "Untitled Workflow");
+  }, [workflowMetadata?.name]);
+
+  const handleTitleChange = (value: string) => {
+    setTitleDraft(value);
+    updateWorkflowMetadata({ name: value });
+  };
 
   return (
     <div ref={sidebarRef} className="relative flex flex-col h-screen bg-black text-white overflow-auto">
-      <div className="absolute inset-0">
+      {/* Background decoration */}
+      <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-50" />
       </div>
-
-      <div className="absolute top-20 left-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000" />
+      <div className="absolute top-20 left-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl animate-pulse pointer-events-none" />
+      <div className="absolute bottom-20 right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
 
       <div className="relative flex flex-col h-full">
         {/* Logo */}
@@ -717,21 +575,45 @@ export function AppSidebar() {
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="p-2 space-y-4">
+          <div className="p-2 space-y-3">
             <NavMain items={navMain} />
 
+            {/* ── Workflow Title Input ── */}
+            <div className="px-3 pt-1 pb-2">
+              <div
+                className="rounded-xl p-3"
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/35 mb-2">
+                  <PenLine className="w-3 h-3" />
+                  Workflow Name
+                </label>
+                <input
+                  type="text"
+                  value={titleDraft}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  placeholder="Untitled Workflow"
+                  className="w-full bg-white/[0.05] border border-white/[0.1] rounded-lg px-3 py-2 text-[12px] text-white placeholder-white/30 focus:outline-none focus:border-cyan-500/50 focus:bg-white/[0.07] transition-all"
+                />
+              </div>
+            </div>
+
+            {/* ── Quick Actions ── */}
             <div className="space-y-1">
-              <div className="px-3 py-2">
+              <div className="px-3 py-1">
                 <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight text-white">
                   Quick Actions
                 </h2>
                 <div className="space-y-3">
+                  {/* My Workflows */}
                   <Button
                     variant="outline"
-                    className="w-full justify-start bg-white/5 backdrop-blur-sm border border-white/20  hover:text-white hover:bg-white/10 text-white rounded-xl transition-all duration-300 transform hover:scale-105"
+                    className="w-full justify-start bg-white/5 backdrop-blur-sm border border-white/20 hover:text-white hover:bg-white/10 text-white rounded-xl transition-all duration-300 transform hover:scale-105"
                     onClick={() => {
                       setShowBrowser(false);
-                      setShowResultBrowser(false);
                       setShowMyWorkflows(!showMyWorkflows);
                     }}
                   >
@@ -739,6 +621,7 @@ export function AppSidebar() {
                     My Workflows
                   </Button>
 
+                  {/* Save Workflow */}
                   <Button
                     variant="outline"
                     className="w-full justify-start bg-white/5 backdrop-blur-sm border border-white/20 hover:text-white hover:bg-white/10 text-white rounded-xl transition-all duration-300 transform hover:scale-105"
@@ -756,12 +639,14 @@ export function AppSidebar() {
                     Save Workflow
                   </Button>
 
+                  {/* Run Workflow (requires save first) */}
                   <Button
                     disabled={!workflowId}
-                    className={`w-full justify-center rounded-xl transition-all duration-300 transform font-semibold ${workflowId
+                    className={`w-full justify-center rounded-xl transition-all duration-300 transform font-semibold ${
+                      workflowId
                         ? "bg-cyan-500 text-black hover:bg-cyan-400 hover:scale-[1.03] shadow-lg shadow-cyan-500/25"
                         : "bg-white/5 text-white/30 cursor-not-allowed border border-white/10"
-                      }`}
+                    }`}
                     onClick={async () => {
                       if (!workflowId) return;
                       const fullWorkflow = getWorkflowExecutionData();
@@ -771,9 +656,7 @@ export function AppSidebar() {
                         const response = await runWorkflowWithAuth(workflowId, payload, returnVariableTags);
                         console.log("Workflow run completed", response);
                         setWorkflowResult(response);
-                        setShowResultBrowser(true);
-                        setShowBrowser(false);
-                        setShowMyWorkflows(false);
+                        setShowResultPanel(true);
                         const execId = response?.executionId;
                         const ownerId = getOwnerIdFromJwt();
                         if (execId && ownerId) {
@@ -790,6 +673,7 @@ export function AppSidebar() {
                     {isRunning ? "Running..." : "Run Workflow"}
                   </Button>
 
+                  {/* Quick Run (save + run) */}
                   <Button
                     variant="outline"
                     className="w-full justify-center border-white/10 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300"
@@ -807,9 +691,7 @@ export function AppSidebar() {
                         const response = await runWorkflowWithAuth(tempId!, payload, returnVariableTags);
                         console.log("Quick run completed", response);
                         setWorkflowResult(response);
-                        setShowResultBrowser(true);
-                        setShowBrowser(false);
-                        setShowMyWorkflows(false);
+                        setShowResultPanel(true);
                         const execId = response?.executionId;
                         const ownerId = getOwnerIdFromJwt();
                         if (execId && tempId && ownerId) {
@@ -825,37 +707,11 @@ export function AppSidebar() {
                     <Zap className="mr-2 h-4 w-4 text-cyan-400" />
                     Run (No Save)
                   </Button>
-
-                  {workflowResult && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-center rounded-xl transition-all duration-300 bg-cyan-900/30 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-800/40 hover:text-cyan-200"
-                      onClick={() => {
-                        setShowResultBrowser(true);
-                        setShowBrowser(false);
-                      }}
-                    >
-                      View Last Results
-                    </Button>
-                  )}
-
-                  {lastExecution && (
-                    <div className="relative">
-                      <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-                      </span>
-                      <PerformancePanelButton
-                        executionId={lastExecution.executionId}
-                        workflowId={lastExecution.workflowId}
-                        apiBase={process.env.NEXT_PUBLIC_BACKEND_URL ?? ""}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
 
+            {/* ── Return Variables ── */}
             <div className="px-3 py-2">
               <button
                 onClick={() => setShowBrowser((v) => !v)}
@@ -926,12 +782,13 @@ export function AppSidebar() {
                   <Variable className="w-6 h-6 text-white/15" />
                   <div className="text-center">
                     <p className="text-[11px] text-white/40 font-medium">No return variables yet</p>
-                    <p className="text-[10px] text-white/25 mt-0.5">Click to browse or pick from nodes</p>
+                    <p className="text-[10px] text-white/25 mt-0.5">Click to browse from nodes</p>
                   </div>
                 </button>
               )}
             </div>
 
+            {/* ── Help / Home ── */}
             <div className="space-y-1">
               <div className="px-3 py-2">
                 <div className="space-y-3">
@@ -961,22 +818,17 @@ export function AppSidebar() {
           </div>
         </ScrollArea>
 
+        {/* User info at bottom */}
         <div className="p-4 border-t bottom-0 border-white/10 backdrop-blur-sm bg-white/5">
           <NavUser user={user} />
         </div>
       </div>
 
+      {/* ── Floating panels (to the right of sidebar) ── */}
       <ReturnVariablesBrowser
         isOpen={showBrowser}
         onClose={() => setShowBrowser(false)}
         sidebarRef={sidebarRef}
-      />
-
-      <WorkflowResultBrowser
-        isOpen={showResultBrowser}
-        onClose={() => setShowResultBrowser(false)}
-        sidebarRef={sidebarRef}
-        resultData={workflowResult}
       />
 
       <MyWorkflowsBrowser
