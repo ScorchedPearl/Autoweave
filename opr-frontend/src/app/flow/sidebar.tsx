@@ -1,5 +1,3 @@
-"use client"
-
 import { AppSidebar } from "./_sidebar/app-sidebar"
 import { ResizableSidebar } from "./_sidebar/resizable-sidebar"
 

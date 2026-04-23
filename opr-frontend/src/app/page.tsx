@@ -1,4 +1,3 @@
-"use client";
 import Header from "./_landingPage/header";
 import Hero from "./_landingPage/hero";
 import WorkflowDemo from "./_landingPage/workflow-demo";

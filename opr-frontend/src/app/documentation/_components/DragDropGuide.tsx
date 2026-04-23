@@ -1,5 +1,3 @@
-"use client";
-
 import { MousePointer2, Move, Trash2, ZoomIn, Command } from "lucide-react";
 
 const nodeCategories = [

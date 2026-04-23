@@ -1,3 +1,4 @@
+"use client";
 import axios from "axios";
 import { SendIcon } from "lucide-react";
 import { useForm } from "react-hook-form";

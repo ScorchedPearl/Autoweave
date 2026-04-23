@@ -1,5 +1,3 @@
-"use client";
-
 import { Play, Circle, CheckCircle2, XCircle, Clock, BarChart3, AlertTriangle } from "lucide-react";
 
 const executionLog = [

@@ -1,5 +1,3 @@
-"use client";
-
 import { Link2, ArrowRight, GitMerge, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const connectionRules = [
