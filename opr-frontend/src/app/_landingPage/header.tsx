@@ -14,9 +14,10 @@ const Header = () => {
   const {currentUser} = useUser();
   console.log("Current User:", currentUser);
   const navItems = [
-    { name: "Product", href: "#hero" },
-    { name: "Features", href: "#features" },
-    { name: "Creators", href: "#creators" },
+    { name: "Product", href: "/#hero" },
+    { name: "Features", href: "/#features" },
+    { name: "Creators", href: "/#creators" },
+    { name: "Documentation", href: "/documentation"}
   ];
   return (
     <header className=" select-none fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
@@ -29,22 +30,30 @@ const Header = () => {
           </div>
 
           <nav className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium"
-                onClick={e => {
-    e.preventDefault();
-    const el = document.getElementById(item.href.replace('#', ''));
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
-  }}
-              >
-                {item.name}
-              </a>
-            ))}
+            {navItems.map((item) => {
+  const isHashLink = item.href.includes("#");
+
+  return (
+    <Link
+      key={item.name}
+      href={item.href}
+      className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium"
+      onClick={(e) => {
+        if (!isHashLink) return; 
+
+        const id = item.href.split("#")[1];
+        const el = document.getElementById(id);
+
+        if (el) {
+          e.preventDefault();
+          el.scrollIntoView({ behavior: "smooth" });
+        }
+      }}
+    >
+      {item.name}
+    </Link>
+  );
+})}
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
