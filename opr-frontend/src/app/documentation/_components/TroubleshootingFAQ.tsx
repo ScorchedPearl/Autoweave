@@ -105,11 +105,9 @@ export default function TroubleshootingFAQ() {
           If you can't find the answer to your question, here are additional resources:
         </p>
         <ul className="space-y-2 text-muted-foreground text-sm">
-          <li>• <strong>Email Support:</strong> Contact us at support@autoweave.io</li>
-          <li>• <strong>Status Page:</strong> Check service status at status.autoweave.io</li>
+          <li>• <strong>Email Support:</strong> Contact us at marcellapearl0627@gmail.com</li>
           <li>• <strong>Community Forum:</strong> Ask questions and share tips with other users</li>
           <li>• <strong>Video Tutorials:</strong> Watch step-by-step guides on our YouTube channel</li>
-          <li>• <strong>Chat Support:</strong> Available during business hours in the app</li>
         </ul>
       </div>
 

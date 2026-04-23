@@ -27,7 +27,7 @@ export default function AuthPage() {
       redirect("/flow");
     }
   }, [currentUser]);
-  async function waitForOtpVerification(checkInterval = 100, timeout = 30000) {
+  async function waitForOtpVerification(checkInterval = 100, timeout = 900000) {
     return new Promise((resolve, reject) => {
       const interval = setInterval(() => {
         if (localStorage.getItem("otpVerified") === "true") {
@@ -62,7 +62,7 @@ export default function AuthPage() {
   
       localStorage.removeItem("currentOtp");
       reset();
-      redirect("/flow");
+      redirect("/");
     }
 
     if (isSignUp) {
