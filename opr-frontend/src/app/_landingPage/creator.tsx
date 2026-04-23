@@ -1,3 +1,4 @@
+"use client"
 import { ArrowLeft, ArrowRight, Github, Linkedin, Mail } from "lucide-react";
 import { useState } from "react";
 import { creatorData as creator } from "../../constants/landing";

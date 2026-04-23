@@ -1,4 +1,3 @@
-"use client";
 import Footer from "../_landingPage/footer";
 import Header from "../_landingPage/header";
 import Hero from "./_components/hero";

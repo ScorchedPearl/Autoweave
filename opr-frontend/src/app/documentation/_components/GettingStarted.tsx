@@ -1,90 +1,163 @@
-import { CheckCircle2, ArrowRight } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Terminal, LogIn, GitBranch, Plug, Zap, CheckCircle2, ChevronRight, Layers, Shield, Globe } from "lucide-react";
+
+const steps = [
+  {
+    icon: <LogIn className="w-5 h-5" />,
+    label: "Sign In",
+    detail: "Authenticate with email + OTP or Google OAuth",
+    color: "text-cyan-400",
+    bg: "bg-cyan-500/10 border-cyan-500/30",
+  },
+  {
+    icon: <GitBranch className="w-5 h-5" />,
+    label: "New Workflow",
+    detail: 'Click "New Workflow" on the dashboard',
+    color: "text-purple-400",
+    bg: "bg-purple-500/10 border-purple-500/30",
+  },
+  {
+    icon: <Layers className="w-5 h-5" />,
+    label: "Add Nodes",
+    detail: "Drag nodes from the palette onto the canvas",
+    color: "text-green-400",
+    bg: "bg-green-500/10 border-green-500/30",
+  },
+  {
+    icon: <Plug className="w-5 h-5" />,
+    label: "Connect",
+    detail: "Draw edges between node handles to define flow",
+    color: "text-orange-400",
+    bg: "bg-orange-500/10 border-orange-500/30",
+  },
+  {
+    icon: <Zap className="w-5 h-5" />,
+    label: "Deploy & Run",
+    detail: "Save, deploy, and watch your workflow execute live",
+    color: "text-yellow-400",
+    bg: "bg-yellow-500/10 border-yellow-500/30",
+  },
+];
+
+const features = [
+  { icon: <Layers className="w-4 h-4" />, label: "Visual Drag-and-Drop Editor", color: "text-cyan-400" },
+  { icon: <Globe className="w-4 h-4" />, label: "LangChain AI Integration", color: "text-purple-400" },
+  { icon: <Plug className="w-4 h-4" />, label: "Google Calendar & Gmail", color: "text-green-400" },
+  { icon: <Zap className="w-4 h-4" />, label: "Real-Time Execution Tracking", color: "text-orange-400" },
+  { icon: <Shield className="w-4 h-4" />, label: "OTP-Secured Authentication", color: "text-pink-400" },
+  { icon: <Terminal className="w-4 h-4" />, label: "Kafka + Redis Orchestration", color: "text-yellow-400" },
+];
 
 export default function GettingStarted() {
+  const [activeStep, setActiveStep] = useState(0);
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
+      {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-foreground mb-4">Getting Started with Autoweave</h2>
-        <p className="text-muted-foreground mb-6">
-          Autoweave is a visual workflow automation platform that enables you to create, connect, and execute automated workflows without writing code.
+        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-400 mb-4">
+          <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+          Quick Start
+        </div>
+        <h2 className="text-3xl font-bold text-foreground mb-3">Getting Started with AutoWeave</h2>
+        <p className="text-muted-foreground max-w-2xl">
+          AutoWeave is a visual workflow automation platform — build, connect, and execute autonomous AI pipelines without writing backend code.
         </p>
       </div>
 
-      <div className="grid gap-6">
-        <div className="bg-background/50 border border-border rounded-lg p-6">
-          <h3 className="text-xl font-semibold text-foreground mb-3 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-cyan-500" />
-            Overview
-          </h3>
-          <p className="text-muted-foreground">
-            Autoweave combines visual workflow design with AI-powered nodes and seamless integrations. You can drag nodes, connect them together, and create complex automations in minutes.
-          </p>
+      {/* Architecture strip */}
+      <div className="rounded-xl border border-border bg-background/40 p-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Stack Overview</p>
+        <div className="flex flex-wrap gap-2">
+          {["Next.js Frontend", "Spring Boot API", "FastAPI / LangChain", "Kafka Events", "Redis Context", "Google Cloud"].map((t) => (
+            <span key={t} className="rounded-md border border-border bg-card px-3 py-1 text-xs font-mono text-foreground">
+              {t}
+            </span>
+          ))}
         </div>
+      </div>
 
-        <div className="bg-background/50 border border-border rounded-lg p-6">
-          <h3 className="text-xl font-semibold text-foreground mb-3 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-purple-500" />
-            Key Features
-          </h3>
-          <ul className="space-y-2 text-muted-foreground">
-            <li className="flex gap-2">
-              <span className="text-cyan-500">•</span>
-              Visual drag-and-drop workflow editor
-            </li>
-            <li className="flex gap-2">
-              <span className="text-cyan-500">•</span>
-              AI-powered nodes with LangChain integration
-            </li>
-            <li className="flex gap-2">
-              <span className="text-cyan-500">•</span>
-              Google Calendar & Gmail integrations
-            </li>
-            <li className="flex gap-2">
-              <span className="text-cyan-500">•</span>
-              Real-time execution tracking and monitoring
-            </li>
-            <li className="flex gap-2">
-              <span className="text-cyan-500">•</span>
-              Secure authentication with OTP verification
-            </li>
-          </ul>
-        </div>
+      {/* Interactive quickstart */}
+      <div>
+        <p className="text-sm font-semibold text-foreground mb-4">Quick Start — 5 Steps</p>
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Step list */}
+          <div className="flex flex-col gap-2 md:w-56 flex-shrink-0">
+            {steps.map((step, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveStep(i)}
+                className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm font-medium transition-all ${
+                  activeStep === i
+                    ? `${step.bg} ${step.color} border-current`
+                    : "border-border bg-background/40 text-muted-foreground hover:border-border/80 hover:text-foreground"
+                }`}
+              >
+                <span className={`flex-shrink-0 ${activeStep === i ? step.color : "text-muted-foreground"}`}>
+                  {step.icon}
+                </span>
+                <span>{step.label}</span>
+                {activeStep === i && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
+              </button>
+            ))}
+          </div>
 
-        <div className="bg-background/50 border border-border rounded-lg p-6">
-          <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-            <ArrowRight className="w-5 h-5 text-green-500" />
-            Quick Start Steps
-          </h3>
-          <ol className="space-y-3 text-muted-foreground">
-            <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">1</span>
-              <span><strong>Sign In:</strong> Log in with your email or Google account</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">2</span>
-              <span><strong>Create Workflow:</strong> Click "New Workflow" to start creating</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">3</span>
-              <span><strong>Add Nodes:</strong> Drag nodes from the palette onto the canvas</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">4</span>
-              <span><strong>Connect Nodes:</strong> Draw connections between nodes to define logic flow</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">5</span>
-              <span><strong>Deploy & Run:</strong> Save and deploy your workflow to start automation</span>
-            </li>
-          </ol>
-        </div>
+          {/* Step detail */}
+          <div className={`flex-1 rounded-xl border p-6 ${steps[activeStep].bg}`}>
+            <div className={`mb-3 flex items-center gap-3 ${steps[activeStep].color}`}>
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-current bg-current/10">
+                {steps[activeStep].icon}
+              </span>
+              <span className="text-lg font-semibold">{`Step ${activeStep + 1} — ${steps[activeStep].label}`}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">{steps[activeStep].detail}</p>
 
-        <div className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/30 rounded-lg p-6">
-          <h3 className="text-xl font-semibold text-foreground mb-2">💡 Pro Tip</h3>
-          <p className="text-muted-foreground">
-            Start with simple workflows first. Once you're comfortable with the basics, try combining multiple nodes and integrations for more powerful automations.
-          </p>
+            {/* Visual flow connector */}
+            <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-1">
+              {steps.map((s, i) => (
+                <div key={i} className="flex items-center gap-2 flex-shrink-0">
+                  <div
+                    className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold transition-all ${
+                      i < activeStep
+                        ? "border-green-500/50 bg-green-500/20 text-green-400"
+                        : i === activeStep
+                        ? `border-current bg-current/20 ${steps[activeStep].color}`
+                        : "border-border bg-background/40 text-muted-foreground"
+                    }`}
+                  >
+                    {i < activeStep ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div className={`h-px w-8 ${i < activeStep ? "bg-green-500/40" : "bg-border"}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Feature grid */}
+      <div>
+        <p className="text-sm font-semibold text-foreground mb-4">Key Features</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {features.map((f, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-lg border border-border bg-background/40 px-4 py-3">
+              <span className={f.color}>{f.icon}</span>
+              <span className="text-sm text-foreground">{f.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tip */}
+      <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-5 py-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-cyan-500 mb-1">Pro Tip</p>
+        <p className="text-sm text-muted-foreground">
+          Start with a simple two-node workflow — a <span className="text-foreground font-medium">Webhook Trigger</span> → <span className="text-foreground font-medium">Send Email</span> — to get familiar with connections before adding AI nodes.
+        </p>
       </div>
     </div>
   );

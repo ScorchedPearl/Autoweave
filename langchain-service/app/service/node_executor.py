@@ -23,7 +23,6 @@ from app.handlers.cpagenthandler import CPAgentHandler
 logger = logging.getLogger(__name__)
 
 class NodeExecutorService:
-    """Node executor service matching Spring Boot StaticNodeExecutor pattern"""
     
     def __init__(self, redis_service: RedisService, kafka_service):
         self.redis_service = redis_service
@@ -56,7 +55,6 @@ class NodeExecutorService:
         logger.info(f"🔧 Initialized node executor with handlers: {list(self.handlers.keys())}")
     
     async def execute_node(self, message: NodeExecutionMessage):
-        """Execute a node - exact match to Spring Boot StaticNodeExecutor.executeNode"""
         start_time = time.time()
         node_id = message.nodeId
         node_type = message.nodeType.lower()
@@ -105,7 +103,6 @@ class NodeExecutorService:
 
 
     async def _store_execution_context(self, message: NodeExecutionMessage):
-        """Store execution context in Redis - matching Spring Boot pattern"""
         try:
             execution_id = str(message.executionId)
             context_key = f"execution:{message.executionId}:node:{message.nodeId}"
@@ -125,7 +122,6 @@ class NodeExecutorService:
 
 
     async def _publish_failure_event(self, message: NodeExecutionMessage, error: str, start_time: float):
-        """Publish failure event - exact match to Spring Boot pattern"""
         try:
             processing_time = int((time.time() - start_time) * 1000)
             
@@ -156,7 +152,6 @@ class NodeExecutorService:
       
             
     async def get_execution_api_key(self, execution_id: str) -> str:
-        """Helper method to get execution-specific API key"""
         try:
             execution_key = f"execution:{execution_id}:openai_api_key"
             api_key = await self.redis_service.get(execution_key)
@@ -178,7 +173,6 @@ class NodeExecutorService:
             return None
 
     async def set_execution_api_key(self, execution_id: str, api_key: str, ttl: int = 3600) -> bool:
-        """Helper method to set execution-specific API key"""
         try:
             execution_key = f"execution:{execution_id}:openai_api_key"
             await self.redis_service.set(execution_key, api_key, ex=ttl)
@@ -189,7 +183,6 @@ class NodeExecutorService:
             return False
 
     async def cleanup_execution_data(self, execution_id: str):
-        """Clean up execution-specific data from Redis"""
         try:
             api_key_key = f"execution:{execution_id}:openai_api_key"
             await self.redis_service.delete(api_key_key)
@@ -200,7 +193,6 @@ class NodeExecutorService:
             logger.error(f"❌ Error cleaning up execution {execution_id}: {e}")
 
     def get_handler_debug_info(self) -> Dict[str, Any]:
-        """Get debug information about all handlers"""
         debug_info = {
             "total_handlers": len(self.handlers),
             "handler_types": list(self.handlers.keys()),

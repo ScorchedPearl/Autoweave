@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage application lifecycle - startup and shutdown"""
     logger.info("🚀 Starting FastAPI Workflow Node Executor")
     
     try:
@@ -67,7 +66,6 @@ app = FastAPI(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint matching Spring Boot pattern"""
     try:
         await app.state.redis_service.ping()
         return {
@@ -82,7 +80,6 @@ async def health_check():
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
     return {
         "message": "FastAPI Workflow Node Executor",
         "docs": "/docs",
@@ -91,7 +88,6 @@ async def root():
 
 @app.get("/node-types")
 async def get_supported_node_types():
-    """Get supported node types - matches Spring Boot routing"""
     return {
         "supported_nodes": [
             "text-generation",

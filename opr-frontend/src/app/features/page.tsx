@@ -1,4 +1,3 @@
-"use client";
 import Features from "../_landingPage/features";
 import Header from "../_landingPage/header";
 import Footer from "../_landingPage/footer";

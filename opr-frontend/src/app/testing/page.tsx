@@ -1,5 +1,3 @@
-
-"use client";
 import { DragProvider } from "@/provider/dragprovider";
 import CanvasDropZone from "./_components/drop-zone";
 import NodePalette from "./_components/node-pallete";
