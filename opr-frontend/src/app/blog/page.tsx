@@ -2,9 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
-import { ArrowLeft, ArrowRight, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Send, CheckCircle2, AlertCircle } from "lucide-react";
+import axios from "axios";
+import { useForm } from "react-hook-form";
 import Header from "../_landingPage/header";
 import Footer from "../_landingPage/footer";
+
+type BlogFormData = {
+  name: string;
+  email: string;
+  title: string;
+  content: string;
+};
 
 type Testimonial = {
   name: string;
@@ -112,6 +121,14 @@ const CreatorWordCard = ({
 
 export default function BlogPage() {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<BlogFormData>();
 
   const headerRef = useRef(null);
   const creatorsRef = useRef(null);
@@ -123,10 +140,22 @@ export default function BlogPage() {
   const testimonialInView = useInView(testimonialRef, { once: true });
   const formInView = useInView(formRef, { once: true });
 
+  const onSubmit = async (data: BlogFormData) => {
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/blog`, data, {
+        headers: { "Content-Type": "application/json" },
+      });
+      setSubmitStatus("success");
+      reset();
+    } catch {
+      setSubmitStatus("error");
+    }
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTestimonialIndex((prev) => (prev + 1) % testimonials.length);
-    }, 8000); 
+    }, 8000);
     return () => clearInterval(interval);
   }, []);
 
@@ -302,81 +331,97 @@ export default function BlogPage() {
             }}
           />
           <h2 className="relative text-2xl font-semibold text-foreground md:text-3xl">
-            Send your blog
+            Post your blog
           </h2>
           <p className="relative mt-2 text-muted-foreground">
             Want to be featured? Share your AutoWeave case study and we will review it.
           </p>
 
-          <form className="relative mt-8 space-y-5">
+          {submitStatus === "success" && (
+            <div className="relative mt-6 flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-5 py-4 text-green-400">
+              <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+              <span className="text-sm font-medium">Blog submitted! We'll review it and reach out soon.</span>
+            </div>
+          )}
+
+          {submitStatus === "error" && (
+            <div className="relative mt-6 flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-400">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <span className="text-sm font-medium">Something went wrong. Please try again.</span>
+            </div>
+          )}
+
+          <form className="relative mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
             <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-2">
-                <label
-                  htmlFor="name"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Name
+                <label htmlFor="name" className="text-sm font-medium text-foreground">
+                  Name <span className="text-cyan-500">*</span>
                 </label>
                 <input
                   id="name"
                   type="text"
                   placeholder="Your full name"
-                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none ring-cyan-500/50 transition focus:ring"
+                  {...register("name", { required: "Name is required" })}
+                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground placeholder-muted-foreground outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50"
                 />
+                {errors.name && <p className="text-xs text-red-400">{errors.name.message}</p>}
               </div>
               <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Email
+                <label htmlFor="email" className="text-sm font-medium text-foreground">
+                  Email <span className="text-cyan-500">*</span>
                 </label>
                 <input
                   id="email"
                   type="email"
                   placeholder="you@example.com"
-                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none ring-cyan-500/50 transition focus:ring"
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email" },
+                  })}
+                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground placeholder-muted-foreground outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50"
                 />
+                {errors.email && <p className="text-xs text-red-400">{errors.email.message}</p>}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="title"
-                className="text-sm font-medium text-foreground"
-              >
-                Blog title
+              <label htmlFor="title" className="text-sm font-medium text-foreground">
+                Blog title <span className="text-cyan-500">*</span>
               </label>
               <input
                 id="title"
                 type="text"
                 placeholder="Enter your blog title"
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none ring-cyan-500/50 transition focus:ring"
+                {...register("title", { required: "Title is required" })}
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground placeholder-muted-foreground outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50"
               />
+              {errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="content"
-                className="text-sm font-medium text-foreground"
-              >
-                Blog content
+              <label htmlFor="content" className="text-sm font-medium text-foreground">
+                Blog content <span className="text-cyan-500">*</span>
               </label>
               <textarea
                 id="content"
                 rows={8}
                 placeholder="Paste your blog content here..."
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none ring-cyan-500/50 transition focus:ring"
+                {...register("content", { required: "Content is required" })}
+                className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-foreground placeholder-muted-foreground outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50"
               />
+              {errors.content && <p className="text-xs text-red-400">{errors.content.message}</p>}
             </div>
 
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-6 py-3 font-medium text-black transition hover:bg-cyan-400"
-            >
-              <Send className="h-4 w-4" />
-              Send your blog
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-6 py-3 font-medium text-cyan-400 transition hover:bg-cyan-500/20 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+                {isSubmitting ? "Posting..." : "Post"}
+              </button>
+            </div>
           </form>
           <div
             className="absolute bottom-0 left-0 right-0 h-[1px] opacity-0 transition-opacity duration-400 group-hover:opacity-100"
