@@ -23,10 +23,10 @@ export function NavUser({
     avatar: string
   }
 }) {
-  const {logout}=useUser();
+  const { logout } = useUser();
   const handleLogout = () => {
-      logout();
-      window.location.href = "/";
+    logout();
+    window.location.href = "/";
   };
   return (
     <DropdownMenu>
@@ -62,23 +62,23 @@ export function NavUser({
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-white/20" />
-        {user.name!== "Guest" ?(
-          
-        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-white/10 text-white rounded-lg transition-all duration-300">
-          <LogOut className="text-cyan-400" />
-          Log out
-        </DropdownMenuItem>
-          
-        ):(
-        <DropdownMenuItem onClick={()=>{
-          window.location.href = "/";
-        }} className="cursor-pointer hover:bg-white/10 text-white rounded-lg transition-all duration-300">
-          <LogOut className="text-cyan-400" />
-          Home
-        </DropdownMenuItem>
-          
+        {user.name !== "Guest" ? (
+
+          <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-white/10 text-white rounded-lg transition-all duration-300">
+            <LogOut className="text-cyan-400" />
+            Log out
+          </DropdownMenuItem>
+
+        ) : (
+          <DropdownMenuItem onClick={() => {
+            window.location.href = "/";
+          }} className="cursor-pointer hover:bg-white/10 text-white rounded-lg transition-all duration-300">
+            <LogOut className="text-cyan-400" />
+            Home
+          </DropdownMenuItem>
+
         )}
-        
+
       </DropdownMenuContent>
     </DropdownMenu>
   )

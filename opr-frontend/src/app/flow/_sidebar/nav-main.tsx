@@ -31,13 +31,12 @@ export function NavMain({
             <Collapsible key={item.title} asChild defaultOpen={item.isActive} className="group/collapsible">
               <div>
                 <CollapsibleTrigger asChild>
-                  <Button 
-                    variant={item.isActive ? "secondary" : "ghost"} 
-                    className={`w-full justify-start rounded-xl transition-all duration-300 ${
-                      item.isActive 
-                        ? "bg-white/10 text-white border border-white/20 backdrop-blur-sm" 
+                  <Button
+                    variant={item.isActive ? "secondary" : "ghost"}
+                    className={`w-full justify-start rounded-xl transition-all duration-300 ${item.isActive
+                        ? "bg-white/10 text-white border border-white/20 backdrop-blur-sm"
                         : "text-white/80 hover:bg-white/5 hover:text-white"
-                    }`}
+                      }`}
                   >
                     {item.icon && <item.icon className={`mr-2 h-4 w-4 ${item.isActive ? "text-cyan-400" : ""}`} />}
                     <span>{item.title}</span>
@@ -50,10 +49,10 @@ export function NavMain({
                   <CollapsibleContent>
                     <div className="ml-6 space-y-1 border-l border-white/20 pl-4">
                       {item.items?.map((subItem) => (
-                        <Button 
-                          key={subItem.title} 
-                          variant="ghost" 
-                          className="w-full justify-start h-8 px-2 text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-300" 
+                        <Button
+                          key={subItem.title}
+                          variant="ghost"
+                          className="w-full justify-start h-8 px-2 text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-300"
                           asChild
                         >
                           <a href={subItem.url} className="flex items-center justify-between">
