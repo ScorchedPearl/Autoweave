@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
 import { Node } from '@xyflow/react';
-import { WorkflowNodeData} from '@/lib/mockdata';
+import { WorkflowNodeData, nodeTemplates } from '@/lib/mockdata';
 import { useDragContext } from '@/provider/dragprovider';
 import { Tag } from '@/components/ui/tag-input';
 
@@ -220,28 +220,35 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [enhancedNodes, edges, workflowMetadata]);
 
   const loadWorkflow = useCallback((data: WorkflowExecutionData) => {
-    const loadedNodes: EnhancedNode[] = data.nodes.map(nodeData => ({
-      id: nodeData.id,
-      type: 'workflowNode',
-      position: nodeData.position || { x: Math.random() * 400, y: Math.random() * 400 },
-      data: {
+    const loadedNodes: EnhancedNode[] = data.nodes.map(nodeData => {
+      // Restore static handle definitions from the template (not stored in the backend)
+      const template = nodeTemplates.find(t => t.type === nodeData.type);
+      return {
         id: nodeData.id,
-        label: nodeData.configuration?.label || nodeData.type,
-        nodeType: nodeData.type,
-        icon: nodeData.configuration?.icon || '🔧',
-        description: nodeData.configuration?.description || '',
-        configuration: nodeData.configuration,
-        config: nodeData.configuration,
-        executionState: 'idle' as const,
-      },
-    }));
+        type: 'workflowNode',
+        position: nodeData.position || { x: Math.random() * 400, y: Math.random() * 400 },
+        data: {
+          id: nodeData.id,
+          label: template?.label || nodeData.configuration?.label || nodeData.type,
+          nodeType: nodeData.type,
+          icon: template?.icon ?? '🔧',
+          description: template?.description || nodeData.configuration?.description || '',
+          configuration: nodeData.configuration,
+          config: nodeData.configuration,
+          executionState: 'idle' as const,
+          inputs: template?.inputs ?? [],
+          outputs: template?.outputs ?? [],
+        },
+      };
+    });
 
     setEnhancedNodes(loadedNodes);
     if (setNodes) setNodes(loadedNodes as unknown as import('@xyflow/react').Node<import('@/lib/mockdata').WorkflowNodeData>[]);
 
-    // Restore edges — must be deferred so ReactFlow has rendered nodes first
-    if (setEdges && data.edges && data.edges.length > 0) {
-      const restoredEdges = data.edges.map(edge => ({
+    // Restore edges synchronously so React 18 batches this with the nodes update,
+    // ensuring both are rendered together in the same cycle.
+    if (setEdges) {
+      const restoredEdges = (data.edges || []).map(edge => ({
         id: edge.id,
         source: edge.source,
         target: edge.target,
@@ -251,8 +258,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         animated: true,
         style: { stroke: '#3b82f6', strokeWidth: 2 },
       }));
-      // Defer one tick so ReactFlow internal node registry is populated before edges are added
-      setTimeout(() => setEdges(restoredEdges), 50);
+      setEdges(restoredEdges);
     }
 
     setWorkflowMetadata(data.metadata);

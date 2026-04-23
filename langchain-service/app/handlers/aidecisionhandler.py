@@ -30,7 +30,7 @@ class AIDecisionHandler(BaseNodeHandler):
             if not options and "options" in context: options = context["options"]
 
             execution_id = str(message.executionId)
-            client = await self.llm_factory.get_llm_client(execution_id, 0.1, 500)
+            client = await self.llm_factory.get_llm_client(execution_id, 0.1, 1000)
 
             prompt = f"Please make a decision based on the following criteria:\n{criteria}\n\nOptions available:\n{options}\n\nReturn your choice and a brief explanation."
             

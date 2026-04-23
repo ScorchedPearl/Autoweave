@@ -31,7 +31,7 @@ class QuestionAnswerHandler(BaseNodeHandler):
             elif not context_text and "context" in context and isinstance(context["context"], str): context_text = context["context"]
 
             execution_id = str(message.executionId)
-            client = await self.llm_factory.get_llm_client(execution_id, 0.2, 500)
+            client = await self.llm_factory.get_llm_client(execution_id, 0.2, 1500)
 
             prompt = f"Answer the following question:\n{question}\n"
             if context_text: prompt += f"\nBased on the following context:\n{context_text}"

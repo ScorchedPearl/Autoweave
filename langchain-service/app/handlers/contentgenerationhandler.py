@@ -30,7 +30,7 @@ class ContentGenerationHandler(BaseNodeHandler):
             length = node_data.get("length", "medium")
 
             execution_id = str(message.executionId)
-            client = await self.llm_factory.get_llm_client(execution_id, 0.7, 1000)
+            client = await self.llm_factory.get_llm_client(execution_id, 0.7, 2048)
 
             prompt = f"Please write a {length} {content_type} in a {style} style about the following topic:\n\n{topic}"
             

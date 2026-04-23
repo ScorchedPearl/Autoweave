@@ -30,6 +30,7 @@ import Link from "next/link"
 import { useSidebar } from "@/provider/sidebarContext";
 import { useWorkflow } from "@/provider/statecontext"
 import { useState, useCallback, useRef, useEffect, useMemo } from "react"
+import { createPortal } from "react-dom"
 import { serializeWorkflowForBackend } from "@/lib/serializeWorkflowData"
 import { useRunWorkflow } from "@/hooks/useRunWorkflow"
 import { useSaveWorkflow } from "@/hooks/useSaveWorkflow"
@@ -106,10 +107,12 @@ function ReturnVariablesBrowser({
   isOpen,
   onClose,
   sidebarRef,
+  panelRef,
 }: {
   isOpen: boolean;
   onClose: () => void;
   sidebarRef: React.RefObject<HTMLDivElement | null>;
+  panelRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const { enhancedNodes, addReturnVariable, returnVariableTags } = useWorkflow();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -154,8 +157,9 @@ function ReturnVariablesBrowser({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
+      ref={panelRef}
       style={panelStyle}
       className="flex flex-col rounded-2xl overflow-hidden"
       onClick={(e) => e.stopPropagation()}
@@ -260,7 +264,8 @@ function ReturnVariablesBrowser({
           Click any variable to add it to return variables
         </p>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -269,12 +274,14 @@ function MyWorkflowsBrowser({
   isOpen,
   onClose,
   sidebarRef,
+  panelRef,
   onLoad,
   onAfterClearAll,
 }: {
   isOpen: boolean;
   onClose: () => void;
   sidebarRef: React.RefObject<HTMLDivElement | null>;
+  panelRef: React.RefObject<HTMLDivElement | null>;
   onLoad: (id: string) => Promise<void>;
   onAfterClearAll?: () => void;
 }) {
@@ -356,8 +363,9 @@ function MyWorkflowsBrowser({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
+      ref={panelRef}
       style={panelStyle}
       className="flex flex-col rounded-2xl overflow-hidden"
       onClick={(e) => e.stopPropagation()}
@@ -496,7 +504,8 @@ function MyWorkflowsBrowser({
           );
         })}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -528,15 +537,21 @@ export function AppSidebar() {
   const [showBrowser, setShowBrowser] = useState(false);
   const [showMyWorkflows, setShowMyWorkflows] = useState(false);
   const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const browserPanelRef = useRef<HTMLDivElement | null>(null);
+  const workflowsPanelRef = useRef<HTMLDivElement | null>(null);
 
   /* ── Click-outside to close panels ── */
   useEffect(() => {
     if (!showBrowser && !showMyWorkflows) return;
     const handler = (e: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
-        setShowBrowser(false);
-        setShowMyWorkflows(false);
-      }
+      const target = e.target as Node;
+      if (
+        sidebarRef.current?.contains(target) ||
+        browserPanelRef.current?.contains(target) ||
+        workflowsPanelRef.current?.contains(target)
+      ) return;
+      setShowBrowser(false);
+      setShowMyWorkflows(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -824,17 +839,19 @@ export function AppSidebar() {
         </div>
       </div>
 
-      {/* ── Floating panels (to the right of sidebar) ── */}
+      {/* ── Floating panels (portaled to document.body to escape backdrop-filter/overflow-hidden) ── */}
       <ReturnVariablesBrowser
         isOpen={showBrowser}
         onClose={() => setShowBrowser(false)}
         sidebarRef={sidebarRef}
+        panelRef={browserPanelRef}
       />
 
       <MyWorkflowsBrowser
         isOpen={showMyWorkflows}
         onClose={() => setShowMyWorkflows(false)}
         sidebarRef={sidebarRef}
+        panelRef={workflowsPanelRef}
         onLoad={loadWorkflowHook}
         onAfterClearAll={() => setWorkflowId(null)}
       />

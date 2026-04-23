@@ -4,7 +4,7 @@ import {
   Zap, PlayCircle, GitBranch, RefreshCw, Clock, Globe, Upload,
   Wrench, Trash2, Bot, FileText, Cpu, MessageCircle, Tag, Bookmark,
   PenLine, Search, BarChart2, Calendar, Calculator, Mail, Eye,
-  FileEdit, Reply,
+  FileEdit, Reply, Key, Code2, Database,
 } from "lucide-react";
 
 type IconComp = React.ElementType;
@@ -21,6 +21,9 @@ function getNodeIcon(nodeType: string): IconComp {
     googleCalendar: Calendar, calculator: Calculator, currentTime: Clock,
     gmailSend: Mail, gmailSearch: Search, gmailMarkRead: Eye,
     gmailAddLabel: Tag, gmailCreateDraft: FileEdit, gmailReply: Reply, action: Mail,
+    "gemini-auth": Key, "openai-auth": Key, "claude-auth": Key,
+    "cp-solver": Code2, "cp-testgen": Code2, "cp-executor": Code2, "cp-agent": Code2,
+    "postgres-db": Database, "mysql-db": Database, "mongo-db": Database,
   };
   return map[nodeType] || Zap;
 }
@@ -40,6 +43,12 @@ function getNodeStyle(nodeType: string) {
     return { color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.28)", badge: "HTTP" };
   if (["googleCalendar"].includes(nodeType))
     return { color: "#60a5fa", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.28)", badge: "Google" };
+  if (["gemini-auth", "openai-auth", "claude-auth"].includes(nodeType))
+    return { color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.28)", badge: "Auth" };
+  if (["cp-solver", "cp-testgen", "cp-executor", "cp-agent"].includes(nodeType))
+    return { color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.28)", badge: "CP" };
+  if (["postgres-db", "mysql-db", "mongo-db"].includes(nodeType))
+    return { color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.28)", badge: "Database" };
   return { color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.28)", badge: "Action" };
 }
 

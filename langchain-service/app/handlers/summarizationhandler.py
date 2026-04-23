@@ -26,7 +26,7 @@ class SummarizationHandler(BaseNodeHandler):
             if not text.strip(): raise ValueError("No text provided for summarization")
 
             execution_id = str(message.executionId)
-            client = await self.llm_factory.get_llm_client(execution_id, 0.3, 500)
+            client = await self.llm_factory.get_llm_client(execution_id, 0.3, 1500)
 
             prompt = f"Please provide a concise summary of the following text:\n\n{text}"
             

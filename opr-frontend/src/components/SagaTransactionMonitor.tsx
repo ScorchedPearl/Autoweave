@@ -197,7 +197,7 @@ function StepTraceEntry({
               {canSimulate && step.stepState === "COMMITTED" && (
                 <button onClick={(e) => { e.stopPropagation(); onSimulateFail(step.nodeId); }}
                   className="mt-2 text-[10px] text-red-500/50 hover:text-red-400 transition-colors flex items-center gap-1">
-                  <XCircle size={9} /> Simulate failure here (professor demo)
+                  <XCircle size={9} /> Simulate failure here 
                 </button>
               )}
             </div>

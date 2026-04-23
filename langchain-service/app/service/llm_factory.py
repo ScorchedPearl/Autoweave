@@ -14,7 +14,7 @@ class LLMFactory:
     def __init__(self, redis_service):
         self.redis_service = redis_service
 
-    async def get_llm_client(self, execution_id: str, temperature: float = 0.7, max_tokens: int = 300) -> BaseChatModel:
+    async def get_llm_client(self, execution_id: str, temperature: float = 0.7, max_tokens: int = 2048) -> BaseChatModel:
         """Determines which API key is available in the workflow execution and returns the corresponding LangChain Chat model."""
 
         # Check OpenAI

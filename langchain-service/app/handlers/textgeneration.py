@@ -20,7 +20,7 @@ class TextGenerationHandler(BaseNodeHandler):
         logger.info("🔧 Initializing modular text generation handler...")
         
         self.llm_factory = LLMFactory(redis_service)
-        self.max_tokens_limit = 1000
+        self.max_tokens_limit = 4096
         
         logger.info(f"✅ Text generation handler initialized - Max tokens: {self.max_tokens_limit}")
 
@@ -39,11 +39,12 @@ class TextGenerationHandler(BaseNodeHandler):
             raw_prompt = node_data.get("prompt", "Hello, how are you?")
             prompt = self.substitute_template_variables(raw_prompt, context)
 
-            requested_tokens = node_data.get("max_tokens", 500)
-            max_tokens = min(requested_tokens, self.max_tokens_limit)
-            
+            requested_tokens = int(node_data.get("max_tokens", self.max_tokens_limit))
+            # Floor at 1024 so stale small values saved in old workflows don't truncate output
+            max_tokens = max(min(requested_tokens, self.max_tokens_limit), 1024)
+
             if requested_tokens > self.max_tokens_limit:
-                logger.warning(f"⚠️ Requested {requested_tokens} tokens, limited to {self.max_tokens_limit}")
+                logger.warning(f"⚠️ Requested {requested_tokens} tokens, capped to {self.max_tokens_limit}")
 
             temperature = node_data.get("temperature", 0.7)
 
