@@ -1,47 +1,163 @@
-import React from 'react';
-import { useDragContext } from '@/provider/dragprovider';
-import NodePalettePanel from './_components/nonCollapsiblePannel';
-import { Plus } from 'lucide-react';
+"use client";
+import React, { useEffect, useRef, useState } from "react";
+import { X, Layers, Search } from "lucide-react";
+import { useDragContext } from "@/provider/dragprovider";
+import NodeTemplateCard from "./_components/nodeTemplateCard";
 
-/* ── Testing-page version: button stays at bottom center (fixed) ── */
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  position: { x: number; y: number };
+  setPosition: React.Dispatch<
+    React.SetStateAction<{ x: number; y: number }>
+  >;
+};
 
-const NodePalette: React.FC = () => {
-  const { togglePalette, isPaletteOpen, setIsPaletteOpen } = useDragContext();
+const NodePalettePanel: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  position,
+  setPosition,
+}) => {
+  const isDragging = useRef(false);
+  const offset = useRef({ x: 0, y: 0 });
 
-  const handleToggle = () => {
-    if (togglePalette) togglePalette();
-    else if (setIsPaletteOpen) setIsPaletteOpen(!isPaletteOpen);
+  const {
+    selectedCategory,
+    setSelectedCategory,
+    draggedItem,
+    clickedItem,
+    categories,
+    filteredTemplates,
+    handleDragStart,
+    handleClick,
+  } = useDragContext();
+
+  const [search, setSearch] = useState("");
+
+  // 🔥 Drag start
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    offset.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    };
   };
 
-  const handleClose = () => {
-    if (setIsPaletteOpen) setIsPaletteOpen(false);
+  // 🔥 Drag move
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging.current) return;
+
+    setPosition({
+      x: e.clientX - offset.current.x,
+      y: e.clientY - offset.current.y,
+    });
   };
+
+  // 🔥 Drag end
+  const handleMouseUp = () => {
+    isDragging.current = false;
+  };
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  if (!isOpen) return null;
+
+  const displayedTemplates = (filteredTemplates ?? []).filter(
+    (t) =>
+      search === "" ||
+      t.label.toLowerCase().includes(search.toLowerCase()) ||
+      t.type.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <>
-      {/* Fixed bottom-center add button for the testing page */}
-      <button
-        onClick={handleToggle}
-        className={`
-          fixed bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-auto
-          w-14 h-14 bg-black/80 hover:bg-black/90 border border-white/10
-          text-white rounded-2xl shadow-2xl backdrop-blur-xl
-          flex items-center justify-center
-          transition-all duration-300 ease-out
-          hover:scale-105 active:scale-95 hover:shadow-cyan-500/20 hover:border-cyan-400/50
-          ${isPaletteOpen ? 'rotate-45 bg-black/90 border-cyan-400/50 shadow-cyan-500/20' : 'rotate-0'}
-        `}
+    <div
+      style={{
+        position: "absolute",
+        left: position.x,
+        top: position.y,
+      }}
+      className="w-[440px] max-h-[calc(100vh-5rem)] flex flex-col z-50"
+    >
+      {/* 🔷 Header (DRAG HANDLE) */}
+      <div
+        onMouseDown={handleMouseDown}
+        className="p-4 border-b cursor-move flex items-center justify-between"
+        style={{
+          background: "rgba(7, 9, 14, 0.9)",
+          borderColor: "rgba(255,255,255,0.07)",
+          borderTopLeftRadius: "1.25rem",
+          borderTopRightRadius: "1.25rem",
+        }}
       >
-        <Plus className="w-6 h-6" />
-      </button>
+        <div className="flex items-center gap-2.5">
+          <Layers className="w-4 h-4 text-cyan-400" />
+          <span className="text-white text-sm font-medium">
+            Node Library
+          </span>
+        </div>
 
-      {/* Panel — no overlay, positioned right of sidebar */}
-      <NodePalettePanel
-        isOpen={isPaletteOpen ?? false}
-        onClose={handleClose}
-      />
-    </>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded hover:bg-white/10 text-white/60"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* 🔷 Body */}
+      <div
+        className="flex flex-col"
+        style={{
+          background: "rgba(7, 9, 14, 0.88)",
+          border: "1px solid rgba(255,255,255,0.09)",
+          borderTop: "none",
+          borderBottomLeftRadius: "1.25rem",
+          borderBottomRightRadius: "1.25rem",
+          backdropFilter: "blur(24px)",
+        }}
+      >
+        {/* Search */}
+        <div className="p-3 border-b border-white/10">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+            <input
+              type="text"
+              placeholder="Search nodes..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-[12px] text-white"
+            />
+          </div>
+        </div>
+
+        {/* Nodes */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {displayedTemplates.length === 0 ? (
+            <p className="text-white/30 text-sm text-center py-6">
+              No nodes found
+            </p>
+          ) : (
+            displayedTemplates.map((template) => (
+              <NodeTemplateCard
+                key={template.type}
+                template={template}
+                onDragStart={handleDragStart ?? (() => {})}
+                onClick={handleClick ?? (() => {})}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default NodePalette;
+export default NodePalettePanel;
