@@ -7,7 +7,6 @@ import {
   RefreshCw, Database, ArrowDown
 } from "lucide-react";
 
-// ── Types ────────────────────────────────────────────────────────────────────
 
 interface StepStatus {
   stepId: string; nodeId: string; nodeType: string; stepOrder: number;
@@ -26,7 +25,6 @@ interface SagaStatusResponse {
 
 interface Props { executionId: string; apiBase?: string; pollIntervalMs?: number; }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const STATE_CONFIG: Record<string, { icon: React.ReactNode; label: string; textColor: string }> = {
   PENDING:      { icon: <Database size={13} />,   label: "Pending",      textColor: "#6b7280" },
@@ -46,7 +44,6 @@ function safeKeys(obj: Record<string, unknown> | null): string[] {
   return obj ? Object.keys(obj).filter(k => !["node_type","workflow_id","execution_id"].includes(k)) : [];
 }
 
-// ── Json Viewer ───────────────────────────────────────────────────────────────
 
 function JsonViewer({ json, label, color }: { json: string | null; label: string; color: string }) {
   const [open, setOpen] = useState(false);
@@ -92,7 +89,6 @@ function JsonViewer({ json, label, color }: { json: string | null; label: string
   );
 }
 
-// ── Step Trace Entry ─────────────────────────────────────────────────────────
 
 function StepTraceEntry({
   step, totalDurationMs, isActive, onSimulateFail, canSimulate,
@@ -117,41 +113,33 @@ function StepTraceEntry({
           boxShadow: isActive ? `0 0 12px ${step.color}18` : "none",
         }}>
 
-        {/* Step icon + state */}
         <span style={{ color: cfg.textColor }} className="flex-shrink-0">{cfg.icon}</span>
 
-        {/* Step number */}
         <span className="text-[10px] text-white/20 font-mono flex-shrink-0">#{step.stepOrder}</span>
 
-        {/* Node type */}
         <span className="text-xs font-semibold text-white/70 flex-1 truncate">{step.nodeType}</span>
 
-        {/* Duration waterfall bar */}
         <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden flex-shrink-0">
           <motion.div className="h-full rounded-full" style={{ background: step.color }}
             initial={{ width: 0 }} animate={{ width: `${barPct}%` }}
             transition={{ duration: 0.7, delay: step.stepOrder * 0.07 }} />
         </div>
 
-        {/* Duration */}
         <span className="text-[11px] font-mono flex-shrink-0 w-14 text-right"
           style={{ color: step.durationMs > 0 ? step.color : "rgba(255,255,255,0.2)" }}>
           {step.durationMs > 0 ? `${step.durationMs}ms` : "–"}
         </span>
 
-        {/* State badge */}
         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
           style={{ background: `${step.color}18`, color: step.color }}>
           {cfg.label}
         </span>
 
-        {/* Expand */}
         <span className="text-white/20 flex-shrink-0">
           {expanded ? <ChevronDown size={11}/> : <ChevronRight size={11}/>}
         </span>
       </motion.div>
 
-      {/* Expanded detail panel */}
       <AnimatePresence>
         {expanded && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
@@ -160,21 +148,17 @@ function StepTraceEntry({
             style={{ border: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.25)" }}>
             <div className="p-3 space-y-1">
 
-              {/* Node ID */}
               <div className="text-[10px] font-mono text-white/25 pb-2"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                 node: {step.nodeId}
               </div>
 
-              {/* Output snapshot */}
               <JsonViewer json={step.outputSnapshot} label="Step Output" color="#22c55e" />
 
-              {/* Compensation payload */}
               {step.hasCompensation && (
                 <JsonViewer json={step.compensationPayload} label="Compensation (undo)" color="#f97316" />
               )}
 
-              {/* Error */}
               {step.errorMessage && (
                 <div className="mt-2 rounded-lg px-3 py-2 text-[11px] text-red-300 flex items-start gap-2"
                   style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
@@ -183,7 +167,6 @@ function StepTraceEntry({
                 </div>
               )}
 
-              {/* Timestamps */}
               <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
                 {step.startedAt && (
                   <div className="text-white/25">Started: <span className="text-white/40">{new Date(step.startedAt).toLocaleTimeString()}</span></div>
@@ -193,7 +176,6 @@ function StepTraceEntry({
                 )}
               </div>
 
-              {/* Simulate failure (demo) */}
               {canSimulate && step.stepState === "COMMITTED" && (
                 <button onClick={(e) => { e.stopPropagation(); onSimulateFail(step.nodeId); }}
                   className="mt-2 text-[10px] text-red-500/50 hover:text-red-400 transition-colors flex items-center gap-1">
@@ -205,7 +187,6 @@ function StepTraceEntry({
         )}
       </AnimatePresence>
 
-      {/* Connector arrow between steps */}
       <div className="flex justify-start ml-6 mb-0.5">
         <ArrowDown size={10} className="text-white/10" />
       </div>
@@ -213,7 +194,6 @@ function StepTraceEntry({
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
 
 export function SagaTransactionMonitor({ executionId, apiBase = "", pollIntervalMs = 2000 }: Props) {
   const [data, setData] = useState<SagaStatusResponse | null>(null);
@@ -250,7 +230,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
     setLoading(true); fetchStatus();
     if (!isTerminal) intervalRef.current = setInterval(fetchStatus, pollIntervalMs);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchStatus]);
 
   useEffect(() => {
@@ -265,7 +244,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
     } finally { setSimulating(false); }
   };
 
-  // Total saga wall time for bar scaling
   const totalMs = data?.steps.reduce((acc, s) => acc + (s.durationMs ?? 0), 0) ?? 0;
   const committedCount = data?.steps.filter(s => s.stepState === "COMMITTED").length ?? 0;
   const totalCount = data?.steps.length ?? 0;
@@ -274,7 +252,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
     <div className="h-full flex flex-col text-white overflow-hidden"
       style={{ background: "linear-gradient(160deg,#070810 0%,#0a0c18 100%)", fontFamily: "'Inter',sans-serif", position: "relative" }}>
 
-      {/* Compensation glow overlay */}
       <AnimatePresence>
         {isCompensating && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -291,7 +268,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
         )}
       </AnimatePresence>
 
-      {/* Header */}
       <div className="relative flex items-center justify-between px-5 py-3.5 flex-shrink-0"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <div>
@@ -317,7 +293,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
         </button>
       </div>
 
-      {/* ACID progress bar */}
       {data && totalCount > 0 && (
         <div className="px-5 pt-3 pb-2 flex-shrink-0">
           <div className="flex justify-between text-[10px] text-white/30 mb-1.5">
@@ -336,7 +311,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
         </div>
       )}
 
-      {/* Content */}
       <div className="flex-1 overflow-auto px-5 pb-5 relative">
 
         {loading && !data && (
@@ -358,7 +332,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
           </div>
         )}
 
-        {/* Not wired yet state */}
         {notFound && (
           <div className="flex flex-col items-center justify-center py-12 gap-4 px-4">
             <div className="p-4 rounded-2xl" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)" }}>
@@ -387,7 +360,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
           </div>
         )}
 
-        {/* Compensation alert */}
         <AnimatePresence>
           {isCompensating && data && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -404,10 +376,8 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
           )}
         </AnimatePresence>
 
-        {/* Trace timeline */}
         {data && data.steps.length > 0 && (
           <div className="mt-2">
-            {/* Column headers */}
             <div className="flex items-center gap-3 px-3 mb-2 text-[9px] text-white/20 uppercase tracking-widest">
               <span className="w-3" />
               <span className="w-4" /><span className="flex-1">Node</span>
@@ -427,7 +397,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
           </div>
         )}
 
-        {/* Narrative */}
         {data && (
           <div className="mt-4 rounded-xl p-4"
             style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
@@ -436,7 +405,6 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
           </div>
         )}
 
-        {/* ACID breakdown (always visible) */}
         <div className="mt-3 grid grid-cols-2 gap-2">
           {[
             { letter: "A", title: "Atomicity", color: "#3b82f6",

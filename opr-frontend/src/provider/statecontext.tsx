@@ -5,7 +5,6 @@ import { useDragContext } from '@/provider/dragprovider';
 import { Tag } from '@/components/ui/tag-input';
 
 export interface EnhancedWorkflowNodeData extends WorkflowNodeData {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   configuration: Record<string, any>;
   executionState?: 'idle' | 'running' | 'success' | 'error';
   lastExecuted?: Date;
@@ -18,11 +17,9 @@ export interface EnhancedNode extends Node<EnhancedWorkflowNodeData> {
 
 export interface WorkflowExecutionData {
   nodes: Array<{
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     inputs: any;
     id: string;
     type: string;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     configuration: Record<string, any>;
     position: { x: number; y: number };
   }>;
@@ -47,7 +44,6 @@ interface WorkflowContextType {
   setEnhancedNodes: (nodes: EnhancedNode[]) => void;
   selectedNodeId: string | null;
   selectedNode: EnhancedNode | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateNodeConfiguration: (nodeId: string, configuration: Record<string, any>) => void;
   updateNodeData: (nodeId: string, updates: Partial<EnhancedWorkflowNodeData>) => void;
   
@@ -59,14 +55,12 @@ interface WorkflowContextType {
   workflowMetadata: WorkflowExecutionData['metadata'];
   updateWorkflowMetadata: (metadata: Partial<WorkflowExecutionData['metadata']>) => void;
 
-  // Return variable management
   returnVariableTags: Tag[];
   addReturnVariable: (key: string) => void;
   removeReturnVariable: (key: string) => void;
   clearReturnVariables: () => void;
   setReturnVariableTags: (tags: Tag[]) => void;
 
-  // Current saved workflow tracking
   currentWorkflowId: string | null;
   setCurrentWorkflowId: (id: string | null) => void;
 
@@ -120,7 +114,6 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     : null;
 
   console.log('Selected node:', selectedNode ? { id: selectedNode.id, label: selectedNode.data.label } : 'none');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateNodeConfiguration = useCallback((nodeId: string, configuration: Record<string, any>) => {
     console.log('Updating node configuration:', { nodeId, configuration });
     
@@ -140,7 +133,6 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (setNodes && nodes) {
       setNodes(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         nodes.map((node: any) =>
           node.id === nodeId
             ? {
@@ -177,7 +169,6 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (setNodes && nodes) {
       setNodes(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         nodes.map((node: any) =>
           node.id === nodeId
             ? {
@@ -245,10 +236,9 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setEnhancedNodes(loadedNodes);
     if (setNodes) setNodes(loadedNodes as unknown as import('@xyflow/react').Node<import('@/lib/mockdata').WorkflowNodeData>[]);
 
-    // Restore edges synchronously so React 18 batches this with the nodes update,
-    // ensuring both are rendered together in the same cycle.
     if (setEdges) {
       const restoredEdges = (data.edges || []).map(edge => ({
+
         id: edge.id,
         source: edge.source,
         target: edge.target,
@@ -258,12 +248,13 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         animated: true,
         style: { stroke: '#3b82f6', strokeWidth: 2 },
       }));
+
       setEdges(restoredEdges);
+
     }
 
     setWorkflowMetadata(data.metadata);
   }, [setNodes, setEdges]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
       if (nodes && nodes.length >= 0) {
         const enhanced = nodes.map(node => ({
@@ -280,7 +271,6 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       getWorkflowExecutionData();
     }, [nodes]);
-// eslint-disable-next-line react-hooks/exhaustive-deps
   const validateWorkflow = useCallback((): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
@@ -304,7 +294,6 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
   }, []);
 
-  // Return variable helpers
   const addReturnVariable = useCallback((key: string) => {
     setReturnVariableTags(prev => {
       if (prev.some(t => t.id === key)) return prev; // deduplicate

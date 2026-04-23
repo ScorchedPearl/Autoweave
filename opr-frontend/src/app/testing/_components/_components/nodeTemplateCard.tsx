@@ -88,13 +88,11 @@ export default function NodeTemplateCard({ template, onDragStart, onClick }: {
         (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 8px rgba(0,0,0,0.4)";
       }}
     >
-      {/* Color accent bar */}
       <div
         className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full"
         style={{ backgroundColor: style.color }}
       />
 
-      {/* Icon */}
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
         style={{ backgroundColor: style.bg, border: `1px solid ${style.border}` }}
@@ -102,7 +100,6 @@ export default function NodeTemplateCard({ template, onDragStart, onClick }: {
         <NodeIcon className="w-[14px] h-[14px]" style={{ color: style.color }} />
       </div>
 
-      {/* Text */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5">
           <span className="text-[12px] font-semibold text-white/88 leading-none truncate">

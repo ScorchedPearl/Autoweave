@@ -7,14 +7,11 @@ export function useLoadWorkflow() {
   return async (workflowId: string) => {
     const workflow = await fetchWorkflow(workflowId);
 
-    // Transform backend workflowData into the WorkflowExecutionData shape expected by loadWorkflow
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wd = workflow.workflowData as any;
     const nodes = (wd.nodes || []).map((n: any) => ({
       id: n.id,
       type: n.type,
       position: n.position || { x: 0, y: 0 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       configuration: (n.data || n.configuration || {}),
       inputs: [],
     }));
@@ -38,7 +35,6 @@ export function useLoadWorkflow() {
       },
     });
 
-    // Track which workflow is loaded so "Save" uses PUT
     setCurrentWorkflowId(workflow.id);
     updateWorkflowMetadata({ name: workflow.name, description: workflow.description || "" });
   };

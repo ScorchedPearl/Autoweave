@@ -17,10 +17,8 @@ export function useSaveWorkflow() {
 
     let response;
     if (currentWorkflowId) {
-      // Re-save (update) existing workflow
       response = await updateWorkflow(currentWorkflowId, payload);
     } else {
-      // First save — create new
       response = await createWorkflow(payload);
       setCurrentWorkflowId(response.id);
     }

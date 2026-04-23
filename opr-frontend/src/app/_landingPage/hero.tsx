@@ -29,7 +29,6 @@ function useTypewriter(words: string[], typeSpeed = 75, deleteSpeed = 45, pauseM
   return displayed;
 }
 
-// phase 0 = idle, 1 = node0 lit, 2 = node0+1 + edge0, 3 = all lit + both edges
 const PHASE_COUNT = 4;
 
 const WorkflowCard = () => {
@@ -46,7 +45,6 @@ const WorkflowCard = () => {
     { label: "Execute", sub: "Database", color: "#22c55e", Icon: Database, activeAt: 3, x: 280 },
   ];
 
-  // edges: M start-right-center L end-left-center (nodes 100px wide, centers at 50/190/330, y=45)
   const edges = [
     { id: "he1", d: "M 100 45 L 140 45", activeAt: 2 },
     { id: "he2", d: "M 240 45 L 280 45", activeAt: 3 },
@@ -56,7 +54,6 @@ const WorkflowCard = () => {
 
   return (
     <div className="bg-[#07090e] rounded-2xl border border-white/[0.08] overflow-hidden shadow-2xl shadow-black/60">
-      {/* Window chrome */}
       <div className="flex items-center px-4 py-3 border-b border-white/[0.05]">
         <div className="flex gap-1.5">
           <div className="w-3 h-3 rounded-full bg-[#FF5F57]" />
@@ -76,11 +73,9 @@ const WorkflowCard = () => {
         </div>
       </div>
 
-      {/* Canvas */}
       <div className="px-6 pt-7 pb-5 relative">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.022)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.022)_1px,transparent_1px)] bg-[size:24px_24px]" />
 
-        {/* Workflow: fixed 380×90 container so SVG coords match HTML positions exactly */}
         <div className="relative w-[380px] h-[90px] mx-auto">
           {nodes.map((node, i) => {
             const isActive = phase >= node.activeAt;
@@ -123,7 +118,6 @@ const WorkflowCard = () => {
             );
           })}
 
-          {/* SVG edge overlay — coordinate-matched to the 380×90 container */}
           <svg
             className="absolute inset-0 pointer-events-none overflow-visible"
             width="380"
@@ -139,7 +133,6 @@ const WorkflowCard = () => {
               const isActive = phase >= e.activeAt;
               return (
                 <g key={e.id}>
-                  {/* Inactive dashed base */}
                   <path
                     d={e.d}
                     fill="none"
@@ -147,7 +140,6 @@ const WorkflowCard = () => {
                     strokeWidth="1.5"
                     strokeDasharray="3 3"
                   />
-                  {/* Active solid line */}
                   {isActive && (
                     <motion.path
                       d={e.d}
@@ -160,7 +152,6 @@ const WorkflowCard = () => {
                       transition={{ duration: 0.4, ease: "easeOut" }}
                     />
                   )}
-                  {/* Flowing particles */}
                   {isActive && [0, 0.52].map(offset => (
                     <circle key={offset} r="2.5" fill="#06b6d4" opacity={0.88}>
                       <animateMotion
@@ -178,7 +169,6 @@ const WorkflowCard = () => {
           </svg>
         </div>
 
-        {/* Progress bar */}
         <div className="mt-5 flex items-center gap-1.5">
           {Array.from({ length: PHASE_COUNT }, (_, i) => (
             <motion.div
@@ -194,7 +184,6 @@ const WorkflowCard = () => {
           <span className="ml-auto text-[10px] text-white/25 font-mono">{statusLabel}</span>
         </div>
 
-        {/* Metrics row */}
         <div className="mt-4 grid grid-cols-3 gap-2">
           {[
             { label: "Execution", value: "1.8s" },
@@ -222,13 +211,11 @@ const Hero = () => {
       id="hero"
       className="relative min-h-screen bg-background overflow-hidden flex items-center"
     >
-      {/* Static background grid */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(6,182,212,0.13)_0%,transparent_70%)]" />
       </div>
 
-      {/* Ambient glow orbs */}
       <motion.div
         className="absolute top-1/3 left-[8%] w-[480px] h-[480px] rounded-full blur-[130px] pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)" }}
@@ -245,7 +232,6 @@ const Hero = () => {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 w-full">
         <div className="grid lg:grid-cols-2 gap-12 xl:gap-20 items-center">
 
-          {/* Left — copy */}
           <div>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -335,7 +321,6 @@ const Hero = () => {
             </motion.div>
           </div>
 
-          {/* Right — workflow card */}
           <motion.div
             initial={{ opacity: 0, x: 40, y: 10 }}
             animate={{ opacity: 1, x: 0, y: 0 }}

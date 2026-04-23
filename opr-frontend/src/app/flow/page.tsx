@@ -13,7 +13,7 @@ import NodePalettePanel from "../testing/_components/_components/nonCollapsibleP
 import { useFlowState } from "../../provider/flowstatecontext";
 import { PerformancePanelButton } from "@/components/PerformancePanel";
 import { Database, ChevronDown, ChevronUp, X } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 /* ── Bottom-right overlay: Intelligence + Results buttons ── */
 function BottomRightOverlay() {
@@ -169,9 +169,24 @@ function ResultsQuickPanel({
   );
 }
 
-/* ── Inner layout that can access all contexts ── */
+
 function FlowLayout() {
   const { isPaletteOpen, setIsPaletteOpen, togglePalette } = useDragContext();
+
+  const [palettePosition, setPalettePosition] = useState({ x: 0, y: 0 });
+  const buttonRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Position BELOW button + SHIFT LEFT (avoid properties panel)
+  useEffect(() => {
+    if (buttonRef.current && isPaletteOpen) {
+      const rect = buttonRef.current.getBoundingClientRect();
+
+      setPalettePosition({
+        x: rect.left - 260, // 👈 SHIFT LEFT (important fix)
+        y: rect.bottom + 10,
+      });
+    }
+  }, [isPaletteOpen]);
 
   const handleToggle = () => {
     if (togglePalette) togglePalette();
@@ -180,43 +195,41 @@ function FlowLayout() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-background">
-      {/* Canvas — full screen, z-0 */}
+      {/* Canvas */}
       <div className="absolute inset-0 z-0">
         <CanvasDropZone />
       </div>
 
-      {/* UI overlay */}
+      {/* UI Overlay */}
       <div className="pointer-events-none absolute inset-0 z-10 flex justify-between">
-        {/* Left sidebar */}
-        <div className="pointer-events-auto h-full py-4 pl-4 drop-shadow-2xl">
+        {/* Sidebar */}
+        <div className="pointer-events-auto h-full py-4 pl-4">
           <Sidebar />
         </div>
 
-        {/* Right column: + button (top) + Properties panel */}
-        <div className="pointer-events-auto h-full py-4 pr-4 drop-shadow-2xl flex items-start gap-2">
-          {/* + button, vertically centered with the top of the properties panel */}
-          <div className="mt-1 flex-shrink-0">
+        {/* Right Side */}
+        <div className="pointer-events-auto h-full py-4 pr-4 flex items-start gap-2">
+          <div ref={buttonRef} className="mt-1">
             <FloatingAddButton
               onClick={handleToggle}
               isOpen={isPaletteOpen ?? false}
             />
           </div>
-          {/* Properties panel */}
           <PropertiesPanel />
         </div>
       </div>
 
-      {/* Node palette panel — no dark overlay, positioned right of sidebar */}
+      {/* ✅ Panel */}
       <NodePalettePanel
         isOpen={isPaletteOpen ?? false}
         onClose={() => setIsPaletteOpen && setIsPaletteOpen(false)}
+        position={palettePosition}
+        setPosition={setPalettePosition}
       />
-
-      {/* Bottom-right overlay: intelligence + results (z-30, pointer-events-auto) */}
-      <BottomRightOverlay />
     </div>
   );
 }
+
 
 export default function FlowPage() {
   return (
