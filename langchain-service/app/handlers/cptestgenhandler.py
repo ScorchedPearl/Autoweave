@@ -33,7 +33,19 @@ class CPTestGenHandler(BaseNodeHandler):
             execution_id = str(message.executionId)
             client = await self.llm_factory.get_llm_client(execution_id, 0.4, 4096)
 
-            prompt = f"You are a test case generator for a competitive programming platform.\nGenerate only no more than that {num_tests} challenging test cases dont add \n.\nYou must return ONLY a JSON object containing a single key 'testcases', which is an array of objects.\nEach object must have 'input' (string) and 'output' (string expected output).\n\nProblem Statement:\n{problem}\n"
+            prompt = (
+                f"You are a test case generator for a competitive programming platform.\n"
+                f"Generate exactly {num_tests} test case(s) for the problem below.\n\n"
+                f"STRICT SIZE RULES — violating any rule makes the output invalid:\n"
+                f"- Any integer N (array size, string length, etc.) must be AT MOST 10.\n"
+                f"- Array/sequence values must each be between 0 and 20.\n"
+                f"- String inputs must be at most 10 characters.\n"
+                f"- Do NOT generate stress/large inputs. Keep every test case tiny.\n\n"
+                f"Return ONLY a JSON object with a single key 'testcases' whose value is an array of objects.\n"
+                f"Each object must have exactly two keys: 'input' (string) and 'output' (string).\n"
+                f"No markdown, no explanation, no extra keys — just the raw JSON object.\n\n"
+                f"Problem Statement:\n{problem}\n"
+            )
             
             def _call_llm():
                 return client.invoke([HumanMessage(content=prompt)]).content
