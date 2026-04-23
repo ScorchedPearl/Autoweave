@@ -1,13 +1,21 @@
 package com.marcella.backend.services;
 
-import com.marcella.backend.workflow.DependencyGraph;
-import com.marcella.backend.workflow.WorkflowDefinition;
-import lombok.RequiredArgsConstructor;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import com.marcella.backend.workflow.DependencyGraph;
+import com.marcella.backend.workflow.WorkflowDefinition;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -62,7 +70,9 @@ public class KahnAlgoService {
 
         List<String> newlyReadyNodes = new ArrayList<>();
 
-        List<String> dependentNodes = graph.getOutgoingEdges().get(completedNodeId);
+        // List<String> dependentNodes = graph.getOutgoingEdges().get(completedNodeId);
+        List<String> dependentNodes = graph.getOutgoingEdges()
+        .getOrDefault(completedNodeId, Collections.emptyList());
         for (String dependentNode : dependentNodes) {
 
             int currentInDegree = graph.getInDegree().get(dependentNode);
@@ -73,7 +83,7 @@ public class KahnAlgoService {
             }
         }
 
-        redisTemplate.opsForValue().set(dependencyKey, graph);
+        redisTemplate.opsForValue().getAndSet(dependencyKey, graph);
 
         return newlyReadyNodes;
     }
