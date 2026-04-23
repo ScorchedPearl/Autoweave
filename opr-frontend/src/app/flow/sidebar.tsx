@@ -7,9 +7,7 @@ export default function Page() {
   return (
     <div className="flex h-full w-fit pointer-events-auto">
       <ResizableSidebar defaultWidth={320} minWidth={300} maxWidth={480}>
-      <div className="h-full overflow-auto">
         <AppSidebar />
-      </div>
       </ResizableSidebar>
     </div>
   )

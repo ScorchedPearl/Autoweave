@@ -569,7 +569,7 @@ export function AppSidebar() {
   };
 
   return (
-    <div ref={sidebarRef} className="relative flex flex-col h-screen bg-black text-white overflow-auto">
+    <div ref={sidebarRef} className="relative flex flex-col h-full bg-black text-white overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-50" />
@@ -577,7 +577,7 @@ export function AppSidebar() {
       <div className="absolute top-20 left-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl animate-pulse pointer-events-none" />
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
 
-      <div className="relative flex flex-col h-full">
+      <div className="relative flex flex-col flex-1 min-h-0">
         {/* Logo */}
         <div className="p-4 border-b border-white/10 backdrop-blur-sm bg-white/5">
           <div className="flex items-center gap-2">
@@ -589,7 +589,7 @@ export function AppSidebar() {
           </div>
         </div>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-2 space-y-3">
             <NavMain items={navMain} />
 

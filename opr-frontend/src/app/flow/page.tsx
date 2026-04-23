@@ -226,6 +226,9 @@ function FlowLayout() {
         position={palettePosition}
         setPosition={setPalettePosition}
       />
+
+      {/* Results + Performance buttons (bottom-right) */}
+      <BottomRightOverlay />
     </div>
   );
 }

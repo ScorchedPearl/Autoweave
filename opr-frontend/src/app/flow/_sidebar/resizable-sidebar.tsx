@@ -53,7 +53,7 @@ export function ResizableSidebar({
   }, [resize, stopResizing])
 
   return (
-    <div className="flex">
+    <div className="flex h-full">
       <div
         ref={sidebarRef}
         className="relative bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full"
@@ -63,7 +63,7 @@ export function ResizableSidebar({
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-50" />
         </div>
 
-        <div className="relative">
+        <div className="relative flex-1 min-h-0 flex flex-col">
           {children}
         </div>
 
