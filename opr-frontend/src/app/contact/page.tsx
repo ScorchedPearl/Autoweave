@@ -1,9 +1,11 @@
+import { UserProvider } from "@/provider/userprovider";
 import Footer from "../_landingPage/footer";
 import Header from "../_landingPage/header";
 import Hero from "./_components/hero";
 
 export default function Page() {
  return (
+  <UserProvider>
   <div className="relative">
     <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] pointer-events-none" />
@@ -18,5 +20,6 @@ export default function Page() {
     </div>
     
   </div>
+  </UserProvider>
  );
 }

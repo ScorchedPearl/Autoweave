@@ -15,7 +15,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: false
     open-in-view: false
 
@@ -90,5 +90,5 @@ logging:
     redis: WARN
 
 sendgrid:
-  api-key: "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"
+  api-key: "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"
   from-email: marcellapearl0627@gmail.com
