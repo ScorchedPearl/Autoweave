@@ -1,7 +1,10 @@
 "use client";
 import axios from "axios";
 import { SendIcon } from "lucide-react";
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
+import { useGoogleLogin, TokenResponse } from "@react-oauth/google";
+import { useUser } from "@/provider/userprovider";
 
 type FormData = {
   name: string;
@@ -19,18 +22,55 @@ export default function Hero() {
     reset,
   } = useForm<FormData>();
 
+  const { googleAuth } = useUser();
+  const loginPromiseHandlers = useRef<{
+    resolve: (value: TokenResponse) => void;
+    reject: (reason?: unknown) => void;
+  } | null>(null);
+
+  const googleLogin = useGoogleLogin({
+    scope:
+      "openid profile email https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.send",
+    onSuccess: (cred) => {
+      loginPromiseHandlers.current?.resolve(cred);
+      loginPromiseHandlers.current = null;
+    },
+    onError: () => {
+      loginPromiseHandlers.current?.reject(new Error("Google login failed"));
+      loginPromiseHandlers.current = null;
+    },
+  });
+
   const onSubmit = async (data: FormData) => {
     try {
-      console.log("Form Submitted:", data);
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contact`, data, {
-        headers: {
-          "Content-Type": "application/json",
+      let token = localStorage.getItem("__Google_Access_Token__");
+
+      if (!token) {
+        const googleResponse: TokenResponse = await new Promise((resolve, reject) => {
+          loginPromiseHandlers.current = { resolve, reject };
+          googleLogin();
+        });
+
+        token = googleResponse.access_token;
+        localStorage.setItem("__Google_Access_Token__", token);
+        await googleAuth(token);
+      }
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/contact`,
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Google-Token": token, 
+          },
         }
-      });
-  
+      );
+
       if (response.status !== 200) {
         throw new Error("Email not sent!");
       }
+
       reset();
     } catch (error) {
       console.error("Error sending message:", error);
@@ -70,6 +110,7 @@ export default function Hero() {
                     />
                     {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
                   </div>
+
                   <div>
                     <label htmlFor="email" className="block text-white text-sm font-medium mb-2">
                       Email <span className="text-cyan-400">*</span>
@@ -104,6 +145,7 @@ export default function Hero() {
                       placeholder="Page name (optional)"
                     />
                   </div>
+
                   <div>
                     <label htmlFor="subject" className="block text-white text-sm font-medium mb-2">
                       Subject <span className="text-cyan-400">*</span>
@@ -147,12 +189,9 @@ export default function Hero() {
             </div>
           </div>
 
-
-
           <div className="lg:col-span-4">
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 h-fit">
               <h3 className="text-xl font-semibold text-white mb-8">Contact Information</h3>
-              
 
               <div className="mb-8">
                 <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
@@ -162,51 +201,10 @@ export default function Hero() {
                   marcellapearl0627@gmail.com
                 </div>
               </div>
-
-        
-              <div>
-                <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">
-                  Connect
-                </div>
-                <div className="flex gap-4">
-                  <a
-                    href="https://instagram.com/marcelpearl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-3 bg-black border border-zinc-700 rounded-lg hover:border-cyan-400 transition-colors group"
-                  >
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <path d="M12 7.2A4.8 4.8 0 1 0 12 16.8 4.8 4.8 0 0 0 12 7.2Zm0 7.8A3 3 0 1 1 12 9a3 3 0 0 1 0 6Zm4.95-8.1a1.125 1.125 0 1 0 0 2.25 1.125 1.125 0 0 0 0-2.25ZM19.2 7.8a5.4 5.4 0 0 0-1.47-3.83A5.4 5.4 0 0 0 13.8 2.4h-3.6a5.4 5.4 0 0 0-3.83 1.47A5.4 5.4 0 0 0 2.4 7.8v3.6a5.4 5.4 0 0 0 1.47 3.83A5.4 5.4 0 0 0 7.8 19.2h3.6a5.4 5.4 0 0 0 3.83-1.47A5.4 5.4 0 0 0 19.2 13.8v-3.6Z" className="fill-gray-400 group-hover:fill-cyan-400 transition-colors" />
-                    </svg>
-                  </a>
-
-                  <a
-                    href="https://linkedin.com/in/marcelpearl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-3 bg-black border border-zinc-700 rounded-lg hover:border-cyan-400 transition-colors group"
-                  >
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <path d="M6.94 8.5a1.06 1.06 0 1 1 0-2.12 1.06 1.06 0 0 1 0 2.12ZM7.99 10.25H5.89V18h2.1v-7.75ZM12.5 10.25h-2.1V18h2.1v-4.25c0-1.13.87-2 2-2s2 .87 2 2V18h2.1v-4.5c0-2.21-1.79-4-4-4s-4 1.79-4 4V18h2.1v-7.75Z" className="fill-gray-400 group-hover:fill-cyan-400 transition-colors" />
-                    </svg>
-                  </a>
-
-                  <a
-                    href="https://github.com/marcelpearl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-3 bg-black border border-zinc-700 rounded-lg hover:border-cyan-400 transition-colors group"
-                  >
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.66-.22.66-.48 0-.24-.01-.87-.01-1.7-2.78.6-3.37-1.34-3.37-1.34-.45-1.15-1.1-1.46-1.1-1.46-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85.004 1.71.12 2.51.35 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85 0 1.33-.01 2.4-.01 2.73 0 .27.16.58.67.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10Z" className="fill-gray-400 group-hover:fill-cyan-400 transition-colors" />
-                    </svg>
-                  </a>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
- );
+  );
 }
