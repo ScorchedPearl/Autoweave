@@ -19,6 +19,20 @@ from app.handlers.cpsolverhandler import CPSolverHandler
 from app.handlers.cptestgenhandler import CPTestGenHandler
 from app.handlers.cpexecutorhandler import CPExecutorHandler
 from app.handlers.cpagenthandler import CPAgentHandler
+from app.handlers.kmeanhandler import KMeansHandler
+from app.handlers.clusterizationhandler import ClusterizationHandler
+from app.handlers.pythontaskhandler import PythonTaskHandler
+from app.handlers.linearregressionhandler import LinearRegressionHandler
+from app.handlers.anomalydetectionhandler import AnomalyDetectionHandler
+from app.handlers.textembeddinghandler import TextEmbeddingHandler
+from app.handlers.dbhealthcheckhandler import DBHealthCheckHandler
+from app.handlers.sslcerthandler import SSLCertHandler
+from app.handlers.portscannerhandler import PortScannerHandler
+from app.handlers.getmyiphandler import GetMyIPHandler
+from app.handlers.hashgeneratorhandler import HashGeneratorHandler
+from app.handlers.fileintegritycheckhandler import FileIntegrityCheckHandler
+from app.handlers.passwordbruteforcehandler import PasswordBruteForceHandler
+from app.handlers.sqlinjectionhandler import SQLInjectionHandler
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +61,20 @@ class NodeExecutorService:
             "cp-testgen": CPTestGenHandler(redis_service),
             "cp-executor": CPExecutorHandler(redis_service),
             "cp-agent": CPAgentHandler(redis_service),
+            "k-means": KMeansHandler(redis_service),
+            "clusterization": ClusterizationHandler(redis_service),
+            "python-task": PythonTaskHandler(redis_service),
+            "linear-regression": LinearRegressionHandler(redis_service),
+            "anomaly-detection": AnomalyDetectionHandler(redis_service),
+            "text-embedding": TextEmbeddingHandler(redis_service),
+            "db-health-check": DBHealthCheckHandler(redis_service),
+            "ssl-cert-checker": SSLCertHandler(redis_service),
+            "port-scanner": PortScannerHandler(redis_service),
+            "get-my-ip": GetMyIPHandler(redis_service),
+            "hash-generator": HashGeneratorHandler(redis_service),
+            "file-integrity-check": FileIntegrityCheckHandler(redis_service),
+            "password-brute-force": PasswordBruteForceHandler(redis_service),
+            "sql-injection-scanner": SQLInjectionHandler(redis_service),
         }
         
 

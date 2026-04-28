@@ -30,15 +30,98 @@ class AIDecisionHandler(BaseNodeHandler):
             if not options and "options" in context: options = context["options"]
 
             execution_id = str(message.executionId)
-            client = await self.llm_factory.get_llm_client(execution_id, 0.1, 1000)
+            client = await self.llm_factory.get_llm_client(execution_id, 0.0, 1024)
 
-            prompt = f"Please make a decision based on the following criteria:\n{criteria}\n\nOptions available:\n{options}\n\nReturn your choice and a brief explanation."
-            
-            def _call_llm(): return client.invoke([HumanMessage(content=prompt)]).content
+            options_str = "\n".join(f"- {o}" for o in options)
+            allowed = ', '.join(repr(str(o)) for o in options)
+            prompt = (
+                f"You are a decision engine. Evaluate the criteria and select the correct option.\n\n"
+                f"Criteria:\n{criteria}\n\n"
+                f"Options (pick one, copy it verbatim):\n{options_str}\n\n"
+                f"Return ONLY a valid JSON object — no markdown, no extra text:\n"
+                f"{{\"decision\": \"<exact option value>\", \"confidence\": <0.0-1.0>}}\n\n"
+                f"CRITICAL: The 'decision' field MUST be exactly one of [{allowed}]."
+            )
+
+            import json
+            import re
+
+            def _call_llm(): return client.invoke([HumanMessage(content=prompt)]).content.strip()
             loop = asyncio.get_event_loop()
-            decision = await loop.run_in_executor(None, _call_llm)
+            raw = await loop.run_in_executor(None, _call_llm)
 
-            output = {**context, "criteria": criteria, "options": options, "decision": decision, "node_type": "ai-decision", "node_executed_at": datetime.now().isoformat()}
+            clean_raw = raw.strip()
+            if clean_raw.startswith("```json"):
+                clean_raw = clean_raw[7:]
+            if clean_raw.startswith("```"):
+                clean_raw = clean_raw[3:]
+            if clean_raw.endswith("```"):
+                clean_raw = clean_raw[:-3]
+            clean_raw = clean_raw.strip()
+
+            logger.info("AI decision raw response: %r", raw)
+            try:
+                parsed = json.loads(clean_raw)
+                decision = str(parsed.get("decision", ""))
+                confidence = float(parsed.get("confidence", 1.0))
+            except Exception:
+                # Full JSON parse failed (e.g. truncated response) — extract fields via regex
+                decision_match = re.search(r'"decision"\s*:\s*"([^"]*)"', raw)
+                conf_match = re.search(r'"confidence"\s*:\s*([0-9.]+)', raw)
+                if decision_match:
+                    decision = decision_match.group(1)
+                    confidence = float(conf_match.group(1)) if conf_match else 1.0
+                    logger.info("Extracted decision from partial JSON: %r", decision)
+                else:
+                    logger.warning("JSON parse failed for AI decision. Raw response: %r", raw)
+                    decision = raw
+                    confidence = 1.0
+
+            matched = False
+            # First pass: exact match
+            for opt in options:
+                if str(opt).strip().lower() == str(decision).strip().lower():
+                    decision = str(opt).strip()
+                    matched = True
+                    break
+
+            # Second pass: word-boundary regex match (longest option first to avoid '1' matching inside '10')
+            if not matched:
+                sorted_options = sorted(options, key=lambda x: len(str(x)), reverse=True)
+                for opt in sorted_options:
+                    pattern = r'\b' + re.escape(str(opt).strip()) + r'\b'
+                    if re.search(pattern, str(decision).strip(), re.IGNORECASE):
+                        decision = str(opt).strip()
+                        matched = True
+                        break
+
+            if not matched and options:
+                logger.warning("Could not match LLM decision %r to any option %s — retrying with simplified prompt", decision, options)
+                simple_prompt = (
+                    f"Choose one from this list and reply with ONLY that value, nothing else:\n"
+                    f"{chr(10).join(str(o) for o in options)}\n\n"
+                    f"Criteria: {criteria}"
+                )
+                raw2 = await loop.run_in_executor(None, lambda: client.invoke([HumanMessage(content=simple_prompt)]).content.strip())
+                for opt in options:
+                    if str(opt).strip().lower() == raw2.strip().lower():
+                        decision = str(opt).strip()
+                        matched = True
+                        break
+                if not matched:
+                    decision = options[0]
+                    logger.error("Retry also failed; defaulting to options[0]=%r", decision)
+
+            output = {
+                **context, 
+                "criteria": criteria, 
+                "options_considered": options, 
+                "decision": str(decision),
+                "confidence": float(confidence),
+                "threshold_met": float(confidence) > 0.5,
+                "node_type": "ai-decision", 
+                "node_executed_at": datetime.now().isoformat()
+            }
             await self._publish_completion_event(message, output, "COMPLETED", int((time.time() - start_time) * 1000))
             return output
         except Exception as e:
