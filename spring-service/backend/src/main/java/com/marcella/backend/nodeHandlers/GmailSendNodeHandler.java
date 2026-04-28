@@ -75,17 +75,7 @@ public class GmailSendNodeHandler implements NodeHandler {
             return output;
 
         } catch (Exception e) {
-            long duration = System.currentTimeMillis() - startTime;
             log.error("Gmail Send Node Error: {}", message.getNodeId(), e);
-
-            Map<String, Object> errorOutput = new HashMap<>();
-            if (message.getContext() != null) errorOutput.putAll(message.getContext());
-            errorOutput.put("error", e.getMessage());
-            errorOutput.put("gmail_sent", false);
-            errorOutput.put("failed_at", Instant.now().toString());
-            errorOutput.put("node_type", "gmailSend");
-
-            publishCompletionEvent(message, errorOutput, "FAILED", duration);
             throw new RuntimeException("Gmail Send Node failed: " + e.getMessage(), e);
         }
     }
@@ -97,22 +87,17 @@ public class GmailSendNodeHandler implements NodeHandler {
 
         MimeMessage email = new MimeMessage(session);
         email.setFrom(new InternetAddress("me"));
-        email.addRecipient(jakarta.mail.Message.RecipientType.TO, new InternetAddress(to));
+
+        if (to != null && !to.trim().isEmpty()) {
+            email.addRecipients(jakarta.mail.Message.RecipientType.TO, InternetAddress.parse(to));
+        }
 
         if (cc != null && !cc.trim().isEmpty()) {
-            for (String ccAddress : cc.split(",")) {
-                if (!ccAddress.trim().isEmpty()) {
-                    email.addRecipient(jakarta.mail.Message.RecipientType.CC, new InternetAddress(ccAddress.trim()));
-                }
-            }
+            email.addRecipients(jakarta.mail.Message.RecipientType.CC, InternetAddress.parse(cc));
         }
 
         if (bcc != null && !bcc.trim().isEmpty()) {
-            for (String bccAddress : bcc.split(",")) {
-                if (!bccAddress.trim().isEmpty()) {
-                    email.addRecipient(jakarta.mail.Message.RecipientType.BCC, new InternetAddress(bccAddress.trim()));
-                }
-            }
+            email.addRecipients(jakarta.mail.Message.RecipientType.BCC, InternetAddress.parse(bcc));
         }
 
         email.setSubject(subject);
@@ -143,7 +128,5 @@ public class GmailSendNodeHandler implements NodeHandler {
                 .build();
 
         eventProducer.publishNodeCompletion(completion);
-        log.info("Published completion event for Gmail Send node: {} with status: {} in {}ms",
-                message.getNodeId(), status, duration);
     }
 }
