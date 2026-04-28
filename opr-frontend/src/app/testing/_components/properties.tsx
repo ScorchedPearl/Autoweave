@@ -5,8 +5,10 @@ import {
   ChevronLeft, ChevronDown, ChevronRight, Info, Braces, Lock,
   Zap, PlayCircle, GitBranch, RefreshCw, Clock, Globe, Upload,
   Wrench, Bot, FileText, Cpu, MessageCircle, Tag, Bookmark,
-  PenLine, Search, BarChart2, Calendar, Mail, Eye, FileEdit,
+  PenLine, Search, BarChart2, Calendar, Mail, Eye, EyeOff, FileEdit,
   Reply, Calculator, ArrowRight, Database, Key, Code2,
+  Network, Share2, TrendingUp, AlertTriangle, Sigma, Terminal, Activity,
+  ShieldCheck, Hash, Unlock, Wifi, ShieldAlert,
 } from "lucide-react";
 import { useWorkflow } from "@/provider/statecontext";
 import { useDragContext } from "@/provider/dragprovider";
@@ -84,7 +86,12 @@ function getNodeIcon(nodeType: string): IconComp {
     gmailCreateDraft: FileEdit, gmailReply: Reply, action: Mail,
     "gemini-auth": Key, "openai-auth": Key, "claude-auth": Key,
     "cp-solver": Code2, "cp-testgen": Code2, "cp-executor": Code2, "cp-agent": Code2,
-    "postgres-db": Database, "mysql-db": Database, "mongo-db": Database,
+    "postgres-db": Database, "mysql-db": Database, "mongo-db": Database, "postgres": Database,
+    "k-means": Network, clusterization: Share2, "linear-regression": TrendingUp,
+    "anomaly-detection": AlertTriangle, "text-embedding": Sigma,
+    "python-task": Terminal, "db-health-check": Activity,
+    "file-integrity-check": ShieldCheck, "get-my-ip": Globe, "hash-generator": Hash,
+    "password-brute-force": Unlock, "port-scanner": Wifi, "sql-injection-scanner": ShieldAlert, "ssl-cert-checker": Lock,
   };
   return map[nodeType] || Zap;
 }
@@ -108,7 +115,13 @@ function getNodeStyle(nodeType: string) {
     return { color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.3)", badge: "Auth" };
   if (["cp-solver", "cp-testgen", "cp-executor", "cp-agent"].includes(nodeType))
     return { color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.3)", badge: "CP" };
-  if (["postgres-db", "mysql-db", "mongo-db"].includes(nodeType))
+  if (["postgres-db", "mysql-db", "mongo-db", "postgres"].includes(nodeType))
+    return { color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.3)", badge: "Database" };
+  if (["k-means", "clusterization", "linear-regression", "anomaly-detection", "text-embedding", "python-task"].includes(nodeType))
+    return { color: "#f97316", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.3)", badge: "ML" };
+  if (["file-integrity-check", "get-my-ip", "hash-generator", "password-brute-force", "port-scanner", "sql-injection-scanner", "ssl-cert-checker"].includes(nodeType))
+    return { color: "#ef4444", bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.3)", badge: "Security" };
+  if (nodeType === "db-health-check")
     return { color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.3)", badge: "Database" };
   return { color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.3)", badge: "Action" };
 }
@@ -442,6 +455,65 @@ function VariablePicker({
   );
 }
 
+const FASTAPI_URL =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_FASTAPI_URL) ||
+  "http://localhost:8000";
+
+function PdfUploadButton({
+  onExtracted,
+  nodeColor,
+}: {
+  onExtracted: (text: string) => void;
+  nodeColor: string;
+}) {
+  const [uploading, setUploading] = React.useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`${FASTAPI_URL}/upload-pdf`, { method: "POST", body: form });
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+      const data = await res.json();
+      onExtracted(data.text ?? "");
+    } catch (err) {
+      console.error("PDF upload failed", err);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <>
+      <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={handleFile} />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        title="Upload a PDF — extracted text will fill this field"
+        className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors disabled:opacity-50"
+        style={{
+          background: "rgba(255,255,255,0.05)",
+          border: `1px solid ${nodeColor}55`,
+          color: nodeColor,
+        }}
+      >
+        {uploading ? (
+          <RefreshCw className="w-3 h-3 animate-spin" />
+        ) : (
+          <FileText className="w-3 h-3" />
+        )}
+        {uploading ? "Reading…" : "Upload PDF"}
+      </button>
+    </>
+  );
+}
+
 function FieldRenderer({
   schema,
   value,
@@ -455,6 +527,8 @@ function FieldRenderer({
   nodeColor: string;
   upstreamVars?: UpstreamVarGroup[];
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+
   const inlineStyle = {
     "--focus-color": nodeColor,
   } as React.CSSProperties;
@@ -482,11 +556,21 @@ function FieldRenderer({
   switch (schema.type as FieldType) {
     case "textarea": {
       const showPicker = schema.supportsTemplate && upstreamVars.length > 0;
+      const showPdf = schema.supportsPdf;
+      const hasToolbar = showPicker || showPdf;
       return (
-        <div className={showPicker ? "space-y-1" : ""}>
-          {showPicker && (
-            <div className="flex justify-end">
-              <VariablePicker upstreamVars={upstreamVars} onInsert={(k) => insertAtCursor(k, true)} />
+        <div className={hasToolbar ? "space-y-1" : ""}>
+          {hasToolbar && (
+            <div className="flex justify-end items-center gap-1.5">
+              {showPdf && (
+                <PdfUploadButton
+                  onExtracted={(text) => onChange(text)}
+                  nodeColor={nodeColor}
+                />
+              )}
+              {showPicker && (
+                <VariablePicker upstreamVars={upstreamVars} onInsert={(k) => insertAtCursor(k, true)} />
+              )}
             </div>
           )}
           <textarea
@@ -587,36 +671,34 @@ function FieldRenderer({
     case "text":
     default: {
       const showPicker = schema.supportsTemplate && upstreamVars.length > 0;
-      if (showPicker) {
-        return (
-          <div className="flex gap-1.5 items-center">
-            <input
-              ref={inputRef}
-              type={schema.type === "email" ? "email" : "text"}
-              value={String(value ?? "")}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={schema.placeholder}
-              className={`${baseInput} flex-1`}
-              style={inlineStyle}
-              onFocus={(e) => { e.target.style.borderColor = nodeColor; e.target.style.boxShadow = `0 0 0 1px ${nodeColor}40`; }}
-              onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; e.target.style.boxShadow = "none"; }}
-            />
-            <VariablePicker upstreamVars={upstreamVars} onInsert={(k) => insertAtCursor(k, false)} />
-          </div>
-        );
-      }
+      const isPassword = schema.key.toLowerCase().includes("password") || schema.label.toLowerCase().includes("password") || schema.type === ("password" as any);
+      const inputType = schema.type === "email" ? "email" : isPassword && !showPassword ? "password" : "text";
+
       return (
-        <input
-          ref={inputRef}
-          type={schema.type === "email" ? "email" : "text"}
-          value={String(value ?? "")}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={schema.placeholder}
-          className={baseInput}
-          style={inlineStyle}
-          onFocus={(e) => { e.target.style.borderColor = nodeColor; e.target.style.boxShadow = `0 0 0 1px ${nodeColor}40`; }}
-          onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; e.target.style.boxShadow = "none"; }}
-        />
+        <div className="flex gap-1.5 items-center relative">
+          <input
+            ref={inputRef}
+            type={inputType}
+            value={String(value ?? "")}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={schema.placeholder}
+            className={`${baseInput} flex-1 ${isPassword ? "pr-8" : ""}`}
+            style={inlineStyle}
+            onFocus={(e) => { e.target.style.borderColor = nodeColor; e.target.style.boxShadow = `0 0 0 1px ${nodeColor}40`; }}
+            onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; e.target.style.boxShadow = "none"; }}
+          />
+          {isPassword && (
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2 text-white/40 hover:text-white/70 transition-colors"
+              style={{ right: showPicker ? "36px" : "8px" }}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          )}
+          {showPicker && <VariablePicker upstreamVars={upstreamVars} onInsert={(k) => insertAtCursor(k, false)} />}
+        </div>
       );
     }
   }

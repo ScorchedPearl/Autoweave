@@ -7,6 +7,8 @@ import {
   Wrench, Trash2, Bot, FileText, Cpu, MessageCircle, Tag, Bookmark,
   PenLine, Search, BarChart2, Calendar, Calculator, Mail, Eye,
   FileEdit, Reply, CornerDownRight, Variable, Check, Key, Code2, Database,
+  Network, Share2, TrendingUp, AlertTriangle, Sigma, Terminal, Activity,
+  ShieldCheck, Hash, Unlock, Wifi, ShieldAlert, Lock,
 } from "lucide-react";
 import { NODE_OUTPUT_REGISTRY } from "@/lib/nodeOutputRegistry";
 import { useWorkflow } from "@/provider/statecontext";
@@ -46,7 +48,12 @@ function getNodeIcon(nodeType: string): IconComp {
     action: Mail,
     "gemini-auth": Key, "openai-auth": Key, "claude-auth": Key,
     "cp-solver": Code2, "cp-testgen": Code2, "cp-executor": Code2, "cp-agent": Code2,
-    "postgres-db": Database, "mysql-db": Database, "mongo-db": Database,
+    "postgres-db": Database, "mysql-db": Database, "mongo-db": Database, "postgres": Database,
+    "k-means": Network, clusterization: Share2, "linear-regression": TrendingUp,
+    "anomaly-detection": AlertTriangle, "text-embedding": Sigma,
+    "python-task": Terminal, "db-health-check": Activity,
+    "file-integrity-check": ShieldCheck, "get-my-ip": Globe, "hash-generator": Hash,
+    "password-brute-force": Unlock, "port-scanner": Wifi, "sql-injection-scanner": ShieldAlert, "ssl-cert-checker": Lock,
   };
   return map[nodeType] || Zap;
 }
@@ -72,7 +79,13 @@ function getNodeStyle(nodeType: string): NS {
     return { color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.28)", badge: "Auth" };
   if (["cp-solver", "cp-testgen", "cp-executor", "cp-agent"].includes(nodeType))
     return { color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.28)", badge: "CP" };
-  if (["postgres-db", "mysql-db", "mongo-db"].includes(nodeType))
+  if (["postgres-db", "mysql-db", "mongo-db", "postgres"].includes(nodeType))
+    return { color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.28)", badge: "Database" };
+  if (["k-means", "clusterization", "linear-regression", "anomaly-detection", "text-embedding", "python-task"].includes(nodeType))
+    return { color: "#f97316", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.28)", badge: "ML" };
+  if (["file-integrity-check", "get-my-ip", "hash-generator", "password-brute-force", "port-scanner", "sql-injection-scanner", "ssl-cert-checker"].includes(nodeType))
+    return { color: "#ef4444", bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.28)", badge: "Security" };
+  if (nodeType === "db-health-check")
     return { color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.28)", badge: "Database" };
   return { color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.28)", badge: "Action" };
 }
