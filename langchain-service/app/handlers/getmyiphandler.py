@@ -64,3 +64,20 @@ class GetMyIPHandler(BaseNodeHandler):
             await self._publish_completion_event(message, output, "FAILED", int((time.time() - start_time) * 1000))
             raise
 
+    async def _publish_completion_event(self, message: NodeExecutionMessage, output: Dict[str, Any], status: str, processing_time: int):
+        try:
+            from app.main import app
+            completion_message = NodeCompletionMessage(
+                executionId=message.executionId, workflowId=message.workflowId,
+                nodeId=message.nodeId, nodeType=message.nodeType,
+                status=status, output=output,
+                error=output.get("error") if status == "FAILED" else None,
+                timestamp=datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
+                processingTime=processing_time,
+            )
+            if hasattr(app.state, 'kafka_service'):
+                await app.state.kafka_service.publish_completion(completion_message)
+        except Exception as e:
+            logger.error(f"Failed to publish event: {e}")
+
+
