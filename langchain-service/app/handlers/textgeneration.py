@@ -41,7 +41,7 @@ class TextGenerationHandler(BaseNodeHandler):
 
             requested_tokens = int(node_data.get("max_tokens", self.max_tokens_limit))
             # Floor at 1024 so stale small values saved in old workflows don't truncate output
-            max_tokens = max(min(requested_tokens, self.max_tokens_limit), 1024)
+            max_tokens = max(min(requested_tokens, self.max_tokens_limit), 5000)
 
             if requested_tokens > self.max_tokens_limit:
                 logger.warning(f"⚠️ Requested {requested_tokens} tokens, capped to {self.max_tokens_limit}")

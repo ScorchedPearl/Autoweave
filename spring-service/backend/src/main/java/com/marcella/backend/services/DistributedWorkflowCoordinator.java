@@ -94,7 +94,8 @@ public class DistributedWorkflowCoordinator {
                 updateStateAndPromoteVariables(executionId, completedNodeId, completionMessage.getOutput());
             }
 
-            List<String> newlyReadyNodes = kahnService.processNodeCompletion(executionId, completedNodeId);
+            List<String> newlyReadyNodes = kahnService.processNodeCompletion(
+                    executionId, completedNodeId, completionMessage.getOutput());
 
             if (!newlyReadyNodes.isEmpty()) {
                 contextService.addReadyNodes(executionId, newlyReadyNodes);
@@ -125,10 +126,17 @@ public class DistributedWorkflowCoordinator {
 
         context.getNodeOutputs().put(nodeId, output);
 
+        // Merge every key from this node's output into globalVariables so any
+        // downstream node can access them via {{variable}} regardless of whether
+        // there is a direct dependency edge between them.
+        if (output != null) {
+            context.getGlobalVariables().putAll(output);
+        }
+
         List<String> returnVars = returnHandler.getReturnVariables(executionId);
         if (returnVars != null && !returnVars.isEmpty()) {
             for (String var : returnVars) {
-                if (output.containsKey(var)) {
+                if (output != null && output.containsKey(var)) {
                     log.info("🎯 Promoting output variable '{}' to global context for return", var);
                     context.getGlobalVariables().put(var, output.get(var));
                 }
