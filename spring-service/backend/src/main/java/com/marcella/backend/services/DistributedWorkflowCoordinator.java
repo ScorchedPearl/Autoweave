@@ -76,10 +76,34 @@ public class DistributedWorkflowCoordinator {
     public void handleNodeCompletion(NodeCompletionMessage completionMessage) {
         UUID executionId = completionMessage.getExecutionId();
         String completedNodeId = completionMessage.getNodeId();
+        String status = completionMessage.getStatus(); // "COMPLETED" or "FAILED"
 
-        log.info("Processing completion for node: {} in execution: {}", completedNodeId, executionId);
+        log.info("Processing completion for node: {} in execution: {} with status: {}",
+                completedNodeId, executionId, status);
 
         try {
+            if ("FAILED".equalsIgnoreCase(status)) {
+                String errorMsg = completionMessage.getError();
+                if (errorMsg == null && completionMessage.getOutput() != null) {
+                    errorMsg = (String) completionMessage.getOutput().get("error");
+                }
+                if (errorMsg == null) errorMsg = "Unknown node execution failure";
+
+                log.error("Node {} reported failure, triggering saga compensation", completedNodeId);
+
+                String finalErrorMsg = errorMsg;
+                sagaCoordinator.getSagaForExecution(executionId).ifPresent(saga -> {
+                    sagaCoordinator.failStepAndCompensate(saga.getSagaId(), completedNodeId, finalErrorMsg);
+                });
+
+                executionRepository.findById(executionId).ifPresent(execution -> {
+                    executionService.failExecution(execution, "Node " + completedNodeId + " failed: " + finalErrorMsg);
+                });
+
+                returnHandler.clearReturnVariables(executionId);
+                return;
+            }
+
             String outputJson = "{}";
             if (completionMessage.getOutput() != null && !completionMessage.getOutput().isEmpty()) {
                 outputJson = objectMapper.writeValueAsString(completionMessage.getOutput());
@@ -108,13 +132,13 @@ public class DistributedWorkflowCoordinator {
             }
 
         } catch (Exception e) {
-            log.error("Node completion error for node: {}", completedNodeId, e);
+            log.error("Internal Coordinator Error processing node completion: {}", completedNodeId, e);
             sagaCoordinator.getSagaForExecution(executionId).ifPresent(saga ->
-                    sagaCoordinator.failStepAndCompensate(saga.getSagaId(), completedNodeId, e.getMessage())
+                    sagaCoordinator.failStepAndCompensate(saga.getSagaId(), completedNodeId, "Coordinator Error: " + e.getMessage())
             );
             Execution execution = executionRepository.findById(executionId).orElse(null);
             if (execution != null) {
-                executionService.failExecution(execution, "Node completion failed: " + e.getMessage());
+                executionService.failExecution(execution, "Internal Coordinator Error: " + e.getMessage());
                 returnHandler.clearReturnVariables(executionId);
             }
         }
