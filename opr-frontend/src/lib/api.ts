@@ -2,6 +2,76 @@ import { Tag } from '@/components/ui/tag-input';
 import axios from 'axios';
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/workflows`;
+const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL ?? "http://localhost:8000";
+
+export interface PdfUploadResult {
+  text: string;
+  pages: number;
+  filename: string;
+  char_count: number;
+}
+
+export async function uploadPdf(file: File): Promise<PdfUploadResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await axios.post<PdfUploadResult>(`${FASTAPI_URL}/upload-pdf`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+}
+
+// ── Workflow Builder ─────────────────────────────────────────────────────
+
+export type WorkflowProvider = "openai" | "gemini" | "claude";
+
+export interface GeneratedWorkflow {
+  nodes: unknown[];
+  edges: unknown[];
+}
+
+export interface NodeSuggestion {
+  type: string;
+  label: string;
+  category: string;
+  icon: string;
+}
+
+export async function generateWorkflowFromPrompt(
+  prompt: string,
+  apiKey: string,
+  provider: WorkflowProvider,
+): Promise<GeneratedWorkflow> {
+  const res = await axios.post<GeneratedWorkflow>(`${FASTAPI_URL}/workflow/generate`, {
+    prompt,
+    api_key: apiKey,
+    provider,
+  });
+  return res.data;
+}
+
+export async function generateWorkflowFromKeywords(
+  keywords: string[],
+): Promise<GeneratedWorkflow> {
+  const res = await axios.post<GeneratedWorkflow>(`${FASTAPI_URL}/workflow/from-keywords`, {
+    keywords,
+  });
+  return res.data;
+}
+
+export async function fetchNodeSuggestions(): Promise<NodeSuggestion[]> {
+  const res = await axios.get<{ nodes: NodeSuggestion[] }>(`${FASTAPI_URL}/workflow/node-suggestions`);
+  return res.data.nodes;
+}
+
+export async function downloadResultsPdf(result: Record<string, unknown>): Promise<void> {
+  const res = await axios.post(`${FASTAPI_URL}/generate-pdf`, result, { responseType: "blob" });
+  const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `workflow-results-${(result?.executionId as string)?.slice(0, 8) ?? Date.now()}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function getAuthToken() {
   const rawToken = localStorage.getItem('__Pearl_Token');
