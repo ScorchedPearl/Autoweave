@@ -103,9 +103,26 @@ public class WorkflowMapper {
 
     private String determineAssignedService(String nodeType) {
         Set<String> aiNodeTypes = Set.of(
-                "ai_decision", "ai_classification", "ai_analysis",
-                "llm_prompt", "ai_transform", "sentiment_analysis",
-                "text_generation", "data_analysis", "ml_prediction"
+            "text-generation",
+            "ai-decision",
+            "summarization",
+            "question-answer",
+            "text-classification",
+            "named-entity",
+            "translation",
+            "content-generation",
+            "search-agent",
+            "data-analyst-agent",
+            "cp-solver",
+            "cp-testgen",
+            "cp-executor",
+            "cp-agent",
+            "k-means",
+            "clusterization",
+            "python-task",
+            "linear-regression",
+            "anomaly-detection",
+            "text-embedding"
         );
 
         return aiNodeTypes.contains(nodeType.toLowerCase()) ? "fastapi" : "spring";

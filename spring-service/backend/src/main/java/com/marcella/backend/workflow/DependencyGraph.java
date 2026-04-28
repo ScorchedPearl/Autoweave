@@ -19,4 +19,5 @@ public class DependencyGraph {
     private Map<String, Integer> inDegree;
     private Set<String> completedNodes;
     private Set<String> failedNodes;
+    private Map<String, Map<String, String>> edgeHandles;
 }

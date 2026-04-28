@@ -32,7 +32,20 @@ public class WorkflowEventProducer {
             "cp-solver",
             "cp-testgen",
             "cp-executor",
-            "cp-agent"
+            "cp-agent",
+            "k-means",
+            "clusterization",
+            "python-task",
+            "linear-regression",
+            "anomaly-detection",
+            "text-embedding",
+            "ssl-cert-checker",
+            "port-scanner",
+            "get-my-ip",
+            "hash-generator",
+            "file-integrity-check",
+            "password-brute-force",
+            "sql-injection-scanner"
     );
 
     private static final Set<String> SPRING_NODE_TYPES = Set.of(

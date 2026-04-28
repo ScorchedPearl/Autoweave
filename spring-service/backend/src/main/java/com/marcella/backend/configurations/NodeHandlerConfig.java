@@ -33,6 +33,11 @@ public class NodeHandlerConfig {
     private final OpenAIAuthNodeHandler openAIAuthNodeHandler;
     private final ClaudeAuthNodeHandler claudeAuthNodeHandler;
 
+    private final PostgresNodeHandler postgresNodeHandler;
+    private final MysqlNodeHandler mysqlNodeHandler;
+    private final MongoDbNodeHandler mongoDbNodeHandler;
+    private final DbHealthCheckNodeHandler dbHealthCheckNodeHandler;
+
     @Bean
     public List<NodeHandler> nodeHandlers() {
         return List.of(
@@ -54,7 +59,11 @@ public class NodeHandlerConfig {
                 gmailMarkReadNodeHandler,
                 geminiAuthNodeHandler,
                 openAIAuthNodeHandler,
-                claudeAuthNodeHandler
+                claudeAuthNodeHandler,
+                postgresNodeHandler,
+                mysqlNodeHandler,
+                mongoDbNodeHandler,
+                dbHealthCheckNodeHandler
         );
     }
 }
