@@ -90,5 +90,5 @@ logging:
     redis: WARN
 
 sendgrid:
-  api-key: "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"
+  api-key: ${SENDGRID_API_KEY}
   from-email: marcellapearl0627@gmail.com
