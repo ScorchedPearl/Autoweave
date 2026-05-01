@@ -104,6 +104,7 @@ export default function NodePalettePanel({
 
   return (
     <div
+      data-tutorial-id="tutorial-palette-overlay"
       style={{
         position: "absolute",
         left: position.x,

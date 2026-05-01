@@ -20,6 +20,7 @@ import {
   RefreshCw,
   AlertCircle,
   PenLine,
+  FilePlus2,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -29,17 +30,18 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import Link from "next/link"
 import { useSidebar } from "@/provider/sidebarContext";
 import { useWorkflow } from "@/provider/statecontext"
-import { useState, useCallback, useRef, useEffect, useMemo } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { serializeWorkflowForBackend } from "@/lib/serializeWorkflowData"
 import { useRunWorkflow } from "@/hooks/useRunWorkflow"
 import { useSaveWorkflow } from "@/hooks/useSaveWorkflow"
 import { useLoadWorkflow } from "@/hooks/useLoadWorkflow"
 import { NODE_OUTPUT_REGISTRY, NodeOutputVar } from "@/lib/nodeOutputRegistry"
-import { fetchWorkflows, deleteWorkflow, WorkflowListItem } from "@/lib/api"
+import { fetchWorkflows, deleteWorkflow, WorkflowListItem, pollForCompletion } from "@/lib/api"
 import { jwtDecode } from "jwt-decode"
 import { useFlowState } from "./../../../provider/flowstatecontext"
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getOwnerIdFromJwt(): string | null {
   try {
     const raw = localStorage.getItem("__Pearl_Token");
@@ -514,21 +516,23 @@ export function AppSidebar() {
   const {
     getWorkflowExecutionData,
     returnVariableTags,
-    setReturnVariableTags,
     removeReturnVariable,
     clearReturnVariables,
-    setCurrentWorkflowId,
     workflowMetadata,
     updateWorkflowMetadata,
+    clearWorkflow,
   } = useWorkflow();
 
   const {
     setLastExecution,
     setWorkflowResult,
     setShowResultPanel,
+    isRunning,
+    setIsRunning,
+    setActiveNodeId,
+    setNodeExecutionStates,
   } = useFlowState();
 
-  const [isRunning, setIsRunning] = useState(false);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
   const runWorkflowWithAuth = useRunWorkflow();
   const saveWorkflow = useSaveWorkflow();
@@ -569,7 +573,7 @@ export function AppSidebar() {
   };
 
   return (
-    <div ref={sidebarRef} className="relative flex flex-col h-full bg-black text-white overflow-hidden">
+    <div ref={sidebarRef} data-tutorial-id="tutorial-sidebar" className="relative flex flex-col h-full bg-black text-white overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-50" />
@@ -623,6 +627,21 @@ export function AppSidebar() {
                   Quick Actions
                 </h2>
                 <div className="space-y-3">
+                  {/* New Workflow */}
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start bg-white/5 backdrop-blur-sm border border-white/20 hover:text-white hover:bg-white/10 text-white rounded-xl transition-all duration-300 transform hover:scale-105"
+                    onClick={() => {
+                      clearWorkflow();
+                      setWorkflowId(null);
+                      setShowMyWorkflows(false);
+                      setShowBrowser(false);
+                    }}
+                  >
+                    <FilePlus2 className="mr-2 h-4 w-4 text-cyan-400" />
+                    New Workflow
+                  </Button>
+
                   {/* My Workflows */}
                   <Button
                     variant="outline"
@@ -668,14 +687,23 @@ export function AppSidebar() {
                       const payload = serializeWorkflowForBackend(fullWorkflow);
                       try {
                         setIsRunning(true);
+                        setNodeExecutionStates({});
+                        setActiveNodeId(null);
+
+                        // Phase 1 — fire the run (non-blocking, returns executionId immediately)
                         const response = await runWorkflowWithAuth(workflowId, payload, returnVariableTags);
-                        console.log("Workflow run completed", response);
-                        setWorkflowResult(response);
-                        setShowResultPanel(true);
                         const execId = response?.executionId;
-                        const ownerId = getOwnerIdFromJwt();
-                        if (execId && ownerId) {
+
+                        // Set lastExecution RIGHT AWAY so WorkflowLiveTracker can start polling
+                        if (execId) {
                           setLastExecution({ executionId: execId, workflowId });
+                        }
+
+                        // Phase 2 — poll saga status until COMPLETED / FAILED
+                        if (execId) {
+                          const result = await pollForCompletion(execId);
+                          setWorkflowResult(result);
+                          setShowResultPanel(true);
                         }
                       } catch (error) {
                         console.error("Failed to run workflow:", error);
@@ -697,20 +725,29 @@ export function AppSidebar() {
                       const payload = serializeWorkflowForBackend(fullWorkflow);
                       try {
                         setIsRunning(true);
+                        setNodeExecutionStates({});
+                        setActiveNodeId(null);
                         let tempId = workflowId;
                         if (!tempId) {
                           const saveRes = await saveWorkflow();
                           tempId = saveRes.id;
                           setWorkflowId(tempId);
                         }
+
+                        // Phase 1 — fire the run (non-blocking)
                         const response = await runWorkflowWithAuth(tempId!, payload, returnVariableTags);
-                        console.log("Quick run completed", response);
-                        setWorkflowResult(response);
-                        setShowResultPanel(true);
                         const execId = response?.executionId;
-                        const ownerId = getOwnerIdFromJwt();
-                        if (execId && tempId && ownerId) {
+
+                        // Set lastExecution immediately for live tracking
+                        if (execId && tempId) {
                           setLastExecution({ executionId: execId, workflowId: tempId });
+                        }
+
+                        // Phase 2 — poll for completion
+                        if (execId) {
+                          const result = await pollForCompletion(execId);
+                          setWorkflowResult(result);
+                          setShowResultPanel(true);
                         }
                       } catch (error) {
                         console.error("Failed quick run:", error);

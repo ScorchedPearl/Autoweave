@@ -12,8 +12,9 @@ import { FloatingAddButton } from "../testing/_components/_components/addButton"
 import NodePalettePanel from "../testing/_components/_components/nonCollapsiblePannel";
 import { useFlowState } from "../../provider/flowstatecontext";
 import { PerformancePanelButton } from "@/components/PerformancePanel";
-import { Database, ChevronDown, ChevronUp, X, Download, Sparkles, Hash, Eye, EyeOff, ChevronRight } from "lucide-react";
+import { Database, ChevronDown, ChevronUp, X, Download, Sparkles, Hash, Eye, EyeOff, ChevronRight, CheckCircle2, XCircle, Zap } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   generateWorkflowFromPrompt,
   generateWorkflowFromKeywords,
@@ -21,10 +22,11 @@ import {
 } from "@/lib/api";
 import type { Node, Edge } from "@xyflow/react";
 import type { WorkflowNodeData } from "@/lib/mockdata";
+import { OnboardingTutorial, TutorialReplayButton } from "./_tutorial/OnboardingTutorial";
 
 /* ── Bottom-right overlay: Intelligence + Results buttons ── */
 function BottomRightOverlay() {
-  const { lastExecution, workflowResult, showResultPanel, setShowResultPanel } =
+  const { lastExecution, workflowResult } =
     useFlowState();
   const [showInline, setShowInline] = useState(false);
 
@@ -87,6 +89,7 @@ function ResultsQuickPanel({
   result,
   onClose,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   result: any;
   onClose: () => void;
 }) {
@@ -193,6 +196,7 @@ const FASTAPI_URL =
   (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_FASTAPI_URL) ||
   "http://localhost:8000";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function downloadResultsPdf(result: any) {
   try {
     const res = await fetch(`${FASTAPI_URL}/generate-pdf`, {
@@ -523,6 +527,303 @@ function WorkflowBuilderChat() {
 }
 
 
+/* ── WorkflowLiveTracker ────────────────────────────────────────────────────
+   Polls /api/v1/saga/execution/{id}/status while the workflow is running and
+   pushes activeNodeId + per-node execution states into FlowStateContext so
+   every WorkflowNode on the canvas can render its own live state badge.    */
+function WorkflowLiveTracker() {
+  const { isRunning, lastExecution, setActiveNodeId, setNodeExecutionStates } = useFlowState();
+  const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+
+  useEffect(() => {
+    if (!isRunning || !lastExecution) return;
+
+    let alive = true;
+
+    const poll = async () => {
+      if (!alive) return;
+      try {
+        const res = await fetch(
+          `${apiBase}/api/v1/saga/execution/${lastExecution.executionId}/status`,
+        );
+        if (!res.ok || !alive) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const body: any = await res.json();
+
+        setActiveNodeId(body.currentStep ?? null);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const states: Record<string, import("@/provider/flowstatecontext").NodeExecState> = {};
+        for (const step of body.steps ?? []) {
+          states[step.nodeId] =
+            step.stepState === "COMMITTED"    ? "completed"
+          : step.stepState === "EXECUTING"    ? "running"
+          : step.stepState === "FAILED"       ? "failed"
+          : step.stepState === "COMPENSATING" ? "failed"
+          : "pending";
+        }
+        setNodeExecutionStates(states);
+      } catch {
+        // saga not yet created or network error — silently ignore
+      }
+    };
+
+    // First poll after a short delay (saga row may not exist yet)
+    const delay = setTimeout(poll, 800);
+    const interval = setInterval(poll, 600);
+
+    return () => {
+      alive = false;
+      clearTimeout(delay);
+      clearInterval(interval);
+    };
+  }, [isRunning, lastExecution?.executionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
+}
+
+/* ── ExecutionHUD ────────────────────────────────────────────────────────────
+   Cinematic floating overlay showing the workflow pipeline, the currently
+   active node (pulsing cyan), completed nodes (green ✓), and a progress bar.
+   Slides in from the top when a run starts and fades out 3 s after it ends.  */
+function ExecutionHUD() {
+  const {
+    isRunning,
+    activeNodeId,
+    nodeExecutionStates,
+    workflowResult,
+  } = useFlowState();
+  const { nodes: rawNodes } = useDragContext();
+  const nodes = rawNodes ?? [];
+
+  const [visible, setVisible]     = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const startRef = useRef<number>(0);
+
+  /* show while running, keep visible 3 s after completion */
+  useEffect(() => {
+    if (isRunning) {
+      startRef.current = Date.now();
+      setElapsedMs(0);
+      setDismissed(false);
+      setVisible(true);
+    } else if (visible) {
+      const t = setTimeout(() => setVisible(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* tick the elapsed timer */
+  useEffect(() => {
+    if (!isRunning) return;
+    const t = setInterval(() => setElapsedMs(Date.now() - startRef.current), 100);
+    return () => clearInterval(t);
+  }, [isRunning]);
+
+  const completedCount = Object.values(nodeExecutionStates).filter(s => s === "completed").length;
+  const failedCount    = Object.values(nodeExecutionStates).filter(s => s === "failed").length;
+  const totalTracked   = Object.keys(nodeExecutionStates).length;
+  const totalNodes     = nodes.length || totalTracked;
+
+  const isDone   = !isRunning && visible && failedCount === 0;
+  const isFailed = failedCount > 0;
+
+  // Show at most 7 pipeline pills; truncate the rest
+  const pipelineNodes = nodes.slice(0, 7);
+
+  return (
+    <AnimatePresence>
+      {visible && !dismissed && (
+        <motion.div
+          key="exec-hud"
+          initial={{ opacity: 0, y: -28, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -28, scale: 0.96 }}
+          transition={{ type: "spring", stiffness: 340, damping: 28 }}
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto"
+          style={{ minWidth: 380, maxWidth: 640 }}
+        >
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: "rgba(4,6,14,0.93)",
+              border: `1px solid ${
+                isFailed ? "rgba(239,68,68,0.45)"
+                : isDone  ? "rgba(34,197,94,0.45)"
+                :           "rgba(6,182,212,0.35)"}`,
+              backdropFilter: "blur(22px)",
+              boxShadow: `0 24px 64px rgba(0,0,0,0.75), 0 0 48px ${
+                isFailed ? "rgba(239,68,68,0.12)"
+                : isDone  ? "rgba(34,197,94,0.12)"
+                :           "rgba(6,182,212,0.14)"}`,
+            }}
+          >
+            {/* ── Header row ── */}
+            <div
+              className="flex items-center gap-3 px-5 py-3"
+              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              {/* Live indicator */}
+              <div className="relative flex-shrink-0 w-3 h-3">
+                {isRunning && (
+                  <motion.span
+                    className="absolute inset-0 rounded-full"
+                    style={{ background: "rgba(6,182,212,0.5)" }}
+                    animate={{ scale: [1, 2.2, 1], opacity: [0.8, 0, 0.8] }}
+                    transition={{ repeat: Infinity, duration: 1.4 }}
+                  />
+                )}
+                <span
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: isFailed ? "#ef4444" : isDone ? "#22c55e" : "#06b6d4",
+                  }}
+                />
+              </div>
+
+              <span className="text-[13px] font-bold text-white/85">
+                {isFailed ? "Execution Failed" : isDone ? "Workflow Complete" : "Executing Workflow"}
+              </span>
+
+              {/* Current node label */}
+              {isRunning && activeNodeId && (
+                <motion.span
+                  key={activeNodeId}
+                  initial={{ opacity: 0, x: 6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="text-[10px] text-white/40 font-mono truncate max-w-[140px]"
+                >
+                  → {nodes.find(n => n.id === activeNodeId)?.data?.label ?? activeNodeId}
+                </motion.span>
+              )}
+
+              {/* Elapsed timer */}
+              <span className="text-[11px] font-mono text-white/30 ml-auto flex-shrink-0">
+                {(elapsedMs / 1000).toFixed(1)}s
+              </span>
+
+              {/* Result badge */}
+              {!isRunning && workflowResult && (
+                isDone
+                  ? <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />
+                  : <XCircle size={14} className="text-red-400 flex-shrink-0" />
+              )}
+
+              {/* ── Manual dismiss ── */}
+              <button
+                onClick={() => setDismissed(true)}
+                className="ml-1 flex-shrink-0 p-1 rounded-lg text-white/25 hover:text-white/70 hover:bg-white/8 transition-colors"
+                title="Dismiss"
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            {/* ── Pipeline row ── */}
+            {totalNodes > 0 && (
+              <div className="px-5 py-3.5 flex items-center gap-1.5 overflow-hidden">
+                {pipelineNodes.map((node, i) => {
+                  const state     = nodeExecutionStates[node.id];
+                  const isActive  = activeNodeId === node.id || state === "running";
+                  const done      = state === "completed";
+                  const failed    = state === "failed";
+
+                  return (
+                    <div key={node.id} className="flex items-center gap-1.5 flex-shrink-0">
+                      <motion.div
+                        animate={isActive ? {
+                          boxShadow: [
+                            "0 0 0 0px rgba(6,182,212,0)",
+                            "0 0 0 5px rgba(6,182,212,0.35)",
+                            "0 0 0 0px rgba(6,182,212,0)",
+                          ],
+                        } : {}}
+                        transition={{ repeat: Infinity, duration: 1.2 }}
+                        className="rounded-lg px-2.5 py-1 text-[9px] font-semibold truncate"
+                        style={{
+                          maxWidth: 88,
+                          background: isActive ? "rgba(6,182,212,0.18)"
+                            : done             ? "rgba(34,197,94,0.14)"
+                            : failed           ? "rgba(239,68,68,0.14)"
+                            :                    "rgba(255,255,255,0.04)",
+                          border: `1px solid ${
+                            isActive ? "rgba(6,182,212,0.6)"
+                            : done   ? "rgba(34,197,94,0.4)"
+                            : failed ? "rgba(239,68,68,0.4)"
+                            :          "rgba(255,255,255,0.09)"}`,
+                          color: isActive ? "#67e8f9"
+                            : done        ? "#4ade80"
+                            : failed      ? "#f87171"
+                            :               "rgba(255,255,255,0.3)",
+                        }}
+                      >
+                        {done ? "✓ " : failed ? "✗ " : isActive ? "⚡ " : ""}
+                        {node.data?.label ?? node.id}
+                      </motion.div>
+
+                      {i < pipelineNodes.length - 1 && (
+                        <motion.span
+                          className="text-[10px] flex-shrink-0"
+                          style={{ color: done ? "rgba(34,197,94,0.45)" : "rgba(255,255,255,0.1)" }}
+                        >
+                          →
+                        </motion.span>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {nodes.length > 7 && (
+                  <span className="text-[9px] text-white/20 flex-shrink-0 ml-1">
+                    +{nodes.length - 7} more
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* ── Progress bar ── */}
+            {totalNodes > 0 && (
+              <div
+                className="px-5 pb-3.5"
+                style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}
+              >
+                <div className="flex justify-between text-[9px] text-white/25 mt-2.5 mb-1.5">
+                  <span className="flex items-center gap-1">
+                    <Zap size={9} className="text-cyan-400/60" />
+                    {completedCount} of {totalNodes} nodes completed
+                  </span>
+                  <span className="font-mono">
+                    {totalNodes > 0 ? Math.round((completedCount / totalNodes) * 100) : 0}%
+                  </span>
+                </div>
+                <div
+                  className="h-1.5 rounded-full overflow-hidden"
+                  style={{ background: "rgba(255,255,255,0.06)" }}
+                >
+                  <motion.div
+                    className="h-full rounded-full"
+                    animate={{ width: `${totalNodes > 0 ? (completedCount / totalNodes) * 100 : 0}%` }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                    style={{
+                      background: isFailed
+                        ? "linear-gradient(90deg,#ef4444,#f87171)"
+                        : isDone
+                        ? "linear-gradient(90deg,#22c55e,#4ade80)"
+                        : "linear-gradient(90deg,#06b6d4,#8b5cf6,#06b6d4)",
+                      backgroundSize: isRunning ? "200% 100%" : "100% 100%",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function FlowLayout() {
   const { isPaletteOpen, setIsPaletteOpen, togglePalette } = useDragContext();
 
@@ -555,20 +856,24 @@ function FlowLayout() {
 
       {/* UI Overlay */}
       <div className="pointer-events-none absolute inset-0 z-10 flex justify-between">
-        {/* Sidebar */}
+        {/* Sidebar — tutorial anchor */}
         <div className="pointer-events-auto h-full py-4 pl-4">
           <Sidebar />
         </div>
 
         {/* Right Side */}
         <div className="pointer-events-auto h-full py-4 pr-4 flex items-start gap-2">
-          <div ref={buttonRef} className="mt-1">
+          {/* Add-node button — tutorial anchor */}
+          <div ref={buttonRef} className="mt-1" data-tutorial-id="tutorial-add-button">
             <FloatingAddButton
               onClick={handleToggle}
               isOpen={isPaletteOpen ?? false}
             />
           </div>
-          <PropertiesPanel />
+          {/* Properties panel — tutorial anchor */}
+          <div data-tutorial-id="tutorial-properties">
+            <PropertiesPanel />
+          </div>
         </div>
       </div>
 
@@ -585,6 +890,20 @@ function FlowLayout() {
 
       {/* Workflow Builder chat (bottom-left) */}
       <WorkflowBuilderChat />
+
+      {/* Live execution HUD — floats above the canvas while a workflow runs */}
+      <ExecutionHUD />
+
+      {/* Polls saga status and pushes node states into context */}
+      <WorkflowLiveTracker />
+
+      {/* ── Onboarding tutorial (shows once for new users) ── */}
+      <OnboardingTutorial />
+
+      {/* Replay tutorial button — top-centre, only visible after tutorial done */}
+      <div style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 30, pointerEvents: "auto" }}>
+        <TutorialReplayButton />
+      </div>
     </div>
   );
 }

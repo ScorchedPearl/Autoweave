@@ -1,3 +1,5 @@
+"use client";
+
 import { NodeTemplate, nodeTemplates, WorkflowNodeData } from "@/lib/mockdata";
 import { Edge, useNodesState, useStore, Node, useEdgesState, OnConnect, Connection, addEdge, OnSelectionChangeParams } from "@xyflow/react";
 import { useContext, createContext, useState, useMemo, useCallback } from "react";

@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { featuresData, statsData } from "../../constants/landing";
 
 
-const FeatureCard = ({ feature, index }: { feature: typeof featuresData[0]; index: number }) => {
+const FeatureCard = ({ feature }: { feature: typeof featuresData[0] }) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
 
@@ -107,7 +107,7 @@ const Features = () => {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-20">
           {featuresData.map((feature, i) => (
-            <FeatureCard key={i} feature={feature} index={i} />
+            <FeatureCard key={i} feature={feature} />
           ))}
         </div>
 

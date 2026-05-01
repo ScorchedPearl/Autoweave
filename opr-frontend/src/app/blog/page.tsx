@@ -340,7 +340,7 @@ export default function BlogPage() {
           {submitStatus === "success" && (
             <div className="relative mt-6 flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-5 py-4 text-green-400">
               <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
-              <span className="text-sm font-medium">Blog submitted! We'll review it and reach out soon.</span>
+              <span className="text-sm font-medium">Blog submitted! We&apos;ll review it and reach out soon.</span>
             </div>
           )}
 

@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  RefreshCw, Database, AlertTriangle, ArrowDown, X,
+  RefreshCw, Database, AlertTriangle, ArrowDown,
   Zap, Map, MapPin, List, Link2, RotateCcw, ArrowUpDown,
-  Scissors, Hash, Settings, ChevronDown, ChevronRight,
+  Scissors, Hash, Settings,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -61,6 +61,172 @@ const NODE_CFG: Record<string, { color: string; glow: string; Icon: IconComp; ve
   "Aggregate":        { color: "#a78bfa", glow: "rgba(167,139,250,0.35)", Icon: <Hash size={16}/>,      verdict: "Aggregate" },
 };
 const fallback = { color: "#64748b", glow: "rgba(100,116,139,0.35)", Icon: <Settings size={16}/>, verdict: "Plan node" };
+
+// ── B-Tree Diagram: shows the actual traversal path as a visual tree ─────────
+//
+// Unlike the query-plan graph (which shows Postgres operation nodes), this
+// diagram shows the B-Tree *data structure* being traversed: Root → Internal
+// nodes → Leaf page, one disk read per level, O(log N) total.
+
+function BTreeDiagram({ node, cfg }: {
+  node: PlanNode;
+  cfg: { color: string; verdict: string };
+}) {
+  const depth = Math.max(2, Math.ceil(Math.log(Math.max(node.planRows, 10)) / Math.log(300)));
+  // Pull the column name out of the index condition predicate (e.g. "(user_id = $1)" → "user_id")
+  const keyCol = node.indexCond
+    ? (node.indexCond.replace(/[()]/g, "").split(/\s*[=<>!]+\s*/)[0] ?? "key").trim()
+    : "key";
+
+  const levels = [
+    {
+      label: "Root Page",
+      sublabel: "Holds ~300 sorted key ranges — one child pointer per range",
+      annotation: `Read ${keyCol} → follow the matching branch pointer`,
+      isLeaf: false,
+    },
+    ...Array.from({ length: Math.max(depth - 2, 0) }, (_, i) => ({
+      label: `Internal Node — Level ${i + 1}`,
+      sublabel: `Each level multiplies addressable key space by ~300 (fan-out)`,
+      annotation: `Compare ${keyCol} again — narrows search to a single child page`,
+      isLeaf: false,
+    })),
+    {
+      label: "Leaf Page",
+      sublabel: "Stores sorted key values + heap tuple IDs (TIDs) — no data yet",
+      annotation: `${node.actualRows} matching TID${node.actualRows !== 1 ? "s" : ""} found → fetch actual rows from heap`,
+      isLeaf: true,
+    },
+  ];
+
+  const seqReads = Math.max(node.planRows, 1);
+  const speedup  = Math.max(1, Math.round(seqReads / depth));
+
+  return (
+    <div>
+      <div className="text-[9px] uppercase tracking-widest text-white/25 mb-1">
+        B-Tree traversal path
+        <span className="ml-2 normal-case font-normal text-white/20">
+          — <span style={{ color: cfg.color }}>{node.indexName ?? "index"}</span> · {depth} page reads total
+        </span>
+      </div>
+
+      {node.indexCond && (
+        <div className="mb-3 text-[9px] font-mono">
+          <span className="text-white/20">Pushed predicate: </span>
+          <span className="text-amber-300/70">{node.indexCond}</span>
+        </div>
+      )}
+
+      {/* Tree levels */}
+      {levels.map((lvl, i) => (
+        <div key={i} className="flex gap-2.5 mb-1.5">
+          {/* Left rail: level label + vertical connector */}
+          <div className="flex flex-col items-center w-7 flex-shrink-0 pt-2">
+            <div className="text-[8px] font-mono text-white/20">L{i}</div>
+            {i < levels.length - 1 && (
+              <div className="mt-1 flex-1 w-px min-h-[20px]" style={{ background: `${cfg.color}30` }} />
+            )}
+          </div>
+
+          {/* Page card */}
+          <div className="flex-1 rounded-xl overflow-hidden"
+            style={{ border: `1px solid ${lvl.isLeaf ? cfg.color + "50" : "rgba(255,255,255,0.07)"}` }}>
+            <div className="flex items-center justify-between px-3 py-2"
+              style={{ background: lvl.isLeaf ? `${cfg.color}10` : "rgba(255,255,255,0.025)" }}>
+              <span className="text-[10px] font-bold"
+                style={{ color: lvl.isLeaf ? cfg.color : "rgba(255,255,255,0.5)" }}>
+                {lvl.label}
+              </span>
+              <span className="text-[8px] font-bold font-mono px-1.5 py-0.5 rounded"
+                style={{ background: `${cfg.color}20`, color: cfg.color }}>
+                1 I/O
+              </span>
+            </div>
+            <div className="px-3 py-1.5"
+              style={{ background: "rgba(0,0,0,0.2)", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+              <p className="text-[9px] text-white/25">{lvl.sublabel}</p>
+              <p className="text-[9px] font-mono mt-0.5"
+                style={{ color: lvl.isLeaf ? `${cfg.color}cc` : "rgba(255,255,255,0.3)" }}>
+                → {lvl.annotation}
+              </p>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* O(log N) vs O(N) comparison */}
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="rounded-lg px-3 py-2 text-center"
+          style={{ background: `${cfg.color}08`, border: `1px solid ${cfg.color}22` }}>
+          <div className="text-[8px] text-white/25">With B-Tree index</div>
+          <div className="text-sm font-bold font-mono mt-0.5" style={{ color: cfg.color }}>
+            {depth} reads
+          </div>
+          <div className="text-[8px] text-white/20 font-mono">O(log N)</div>
+        </div>
+        <div className="rounded-lg px-3 py-2 text-center"
+          style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)" }}>
+          <div className="text-[8px] text-white/25">Without index</div>
+          <div className="text-sm font-bold font-mono mt-0.5 text-red-400">
+            ~{seqReads.toLocaleString()} reads
+          </div>
+          <div className="text-[8px] text-white/20 font-mono">O(N)</div>
+        </div>
+      </div>
+
+      <div className="mt-2 flex items-center justify-between rounded-lg px-3 py-1.5"
+        style={{ background: `${cfg.color}06`, border: `1px solid ${cfg.color}15` }}>
+        <span className="text-[9px] text-white/25">Index speedup</span>
+        <span className="text-base font-bold font-mono" style={{ color: cfg.color }}>
+          {speedup.toLocaleString()}×
+        </span>
+        <span className="text-[8px] text-white/20">faster than full table scan</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Index Advisor: shown when Postgres falls back to a sequential scan ────────
+//
+// A seq scan means no usable index exists. This component surfaces the exact
+// CREATE INDEX statement the user should run to fix it.
+
+function IndexAdvisor({ node }: { node: PlanNode }) {
+  if (!node.relationName) return null;
+  const filterCol = node.filter
+    ? (node.filter.replace(/[()]/g, "").split(/\s*[=<>!]+\s*/)[0] ?? "column").trim()
+    : "column_name";
+
+  return (
+    <div className="rounded-xl overflow-hidden"
+      style={{ border: "1px solid rgba(239,68,68,0.3)" }}>
+      <div className="flex items-center gap-2 px-3 py-2"
+        style={{ background: "rgba(239,68,68,0.1)", borderBottom: "1px solid rgba(239,68,68,0.15)" }}>
+        <AlertTriangle size={11} className="text-red-400 flex-shrink-0" />
+        <div>
+          <div className="text-[9px] font-bold text-red-400 uppercase tracking-widest">Index Advisor</div>
+          <p className="text-[9px] text-red-300/50 mt-0.5">
+            Seq scan = O(N). Every row in <span className="font-mono text-red-300/70">{node.relationName}</span> is being read.
+          </p>
+        </div>
+      </div>
+      <div className="px-3 py-3" style={{ background: "rgba(0,0,0,0.35)" }}>
+        <div className="text-[9px] uppercase tracking-widest text-white/20 mb-2">Suggested DDL fix</div>
+        <code className="block font-mono text-[11px] rounded-lg px-3 py-2.5 leading-loose whitespace-pre"
+          style={{ background: "rgba(34,197,94,0.07)", color: "#86efac", border: "1px solid rgba(34,197,94,0.18)" }}>
+{`CREATE INDEX CONCURRENTLY
+  ON ${node.relationName} (${filterCol});`}
+        </code>
+        <p className="text-[9px] text-white/20 mt-2 leading-relaxed">
+          <span className="text-white/35">CONCURRENTLY</span> = zero table lock, safe on a live production database.
+          After creation Postgres will automatically select this index for queries matching this predicate —
+          converting this O(N) scan to O(log N).
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // ── Interactive Graph Node Card ──────────────────────────────────────────────
 
@@ -182,27 +348,65 @@ function NodeDetail({ node, onClose }: { node: PlanNode; onClose: () => void }) 
 
       <div className="flex-1 overflow-auto p-4 space-y-3 text-xs">
 
-        {/* What happened */}
+        {/* What happened — per-node-type explanation */}
         <div className="rounded-xl p-3" style={{ background: `${cfg.color}0a`, border: `1px solid ${cfg.color}22` }}>
           <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">What happened here</div>
           {isIndexScan ? (
             <p className="text-white/60 leading-relaxed">
-              Postgres used the <span style={{ color: cfg.color }} className="font-mono">{node.indexName ?? "index"}</span> B-Tree
-              to locate rows. Instead of reading every row ({(node.planRows * 10).toLocaleString()} worst-case),
-              it traversed <strong className="text-white/80">~{Math.ceil(Math.log2(Math.max(node.planRows, 2)))} B-Tree levels</strong> and
-              fetched only the {node.actualRows} matching rows — direct pointer access.
+              Postgres used the <span style={{ color: cfg.color }} className="font-mono">{node.indexName ?? "index"}</span> B-Tree.
+              Instead of reading all {node.planRows.toLocaleString()} rows it descended{" "}
+              <strong className="text-white/80">
+                {Math.max(2, Math.ceil(Math.log(Math.max(node.planRows, 10)) / Math.log(300)))} levels
+              </strong>{" "}
+              of the tree and fetched only the {node.actualRows} matching rows via heap pointers — O(log N).
             </p>
           ) : node.nodeType === "Seq Scan" ? (
             <p className="text-white/60 leading-relaxed">
-              <span className="text-red-400 font-semibold">No index was used.</span> Postgres read
-              every row in the <span className="font-mono text-white/70">{node.relationName}</span> table sequentially.
+              <span className="text-red-400 font-semibold">No index was used.</span>{" "}
+              Postgres read every row in <span className="font-mono text-white/70">{node.relationName}</span> from disk,
+              top to bottom — O(N).
               {node.rowsRemovedByFilter != null && node.rowsRemovedByFilter > 0
-                ? ` ${node.rowsRemovedByFilter.toLocaleString()} rows were then discarded by the filter predicate.`
-                : ""} This is O(N) — add a composite index to fix this.
+                ? ` ${node.rowsRemovedByFilter.toLocaleString()} rows were then discarded by the filter predicate — wasted I/O.`
+                : ""}
+              {" "}See the Index Advisor below.
+            </p>
+          ) : node.nodeType === "Hash Join" ? (
+            <p className="text-white/60 leading-relaxed">
+              Postgres built an in-memory hash table from the smaller input ({node.planRows.toLocaleString()} rows planned),
+              then probed it with each row from the outer input. Average lookup cost is O(1) per probe.
+              Total time: {node.actualTotalTime.toFixed(2)}ms for {node.actualRows.toLocaleString()} output rows.
+            </p>
+          ) : node.nodeType === "Nested Loop" ? (
+            <p className="text-white/60 leading-relaxed">
+              For each row in the outer input, Postgres executed the inner plan once. This is O(outer × inner) in the
+              worst case. Efficient when the inner side uses an index — expensive when it does not.
+              Produced {node.actualRows.toLocaleString()} rows in {node.actualTotalTime.toFixed(2)}ms.
+            </p>
+          ) : node.nodeType === "Sort" ? (
+            <p className="text-white/60 leading-relaxed">
+              Input rows were sorted in memory (quicksort) or on disk (merge sort) before being passed to the parent node.
+              If this sort feeds a Limit, adding an index on the sort key would eliminate this node entirely.
+              Sorted {node.actualRows.toLocaleString()} rows in {node.actualTotalTime.toFixed(2)}ms.
+            </p>
+          ) : node.nodeType === "Aggregate" ? (
+            <p className="text-white/60 leading-relaxed">
+              An aggregation function (COUNT, SUM, AVG, …) was computed over {node.planRows.toLocaleString()} input rows,
+              producing {node.actualRows.toLocaleString()} output group{node.actualRows !== 1 ? "s" : ""}.
+              Time: {node.actualTotalTime.toFixed(2)}ms.
+            </p>
+          ) : node.nodeType === "Limit" ? (
+            <p className="text-white/60 leading-relaxed">
+              Stopped reading after {node.actualRows.toLocaleString()} rows.
+              If the child node is a Sort, adding an index on the sort key would make this O(1) instead of O(N log N).
             </p>
           ) : (
             <p className="text-white/60 leading-relaxed">
-              {node.nodeType} took {node.actualTotalTime.toFixed(3)}ms to process {node.actualRows} rows.
+              <span style={{ color: cfg.color }} className="font-semibold">{node.nodeType}</span>{" "}
+              processed {node.actualRows.toLocaleString()} rows in {node.actualTotalTime.toFixed(3)}ms
+              (planner estimated {node.planRows.toLocaleString()}).
+              {Math.abs(node.actualRows - node.planRows) / Math.max(node.planRows, 1) > 0.5
+                ? " Note: actual vs. planned row count diverged significantly — consider running ANALYZE to refresh statistics."
+                : ""}
             </p>
           )}
         </div>
@@ -256,53 +460,11 @@ function NodeDetail({ node, onClose }: { node: PlanNode; onClose: () => void }) 
           </div>
         </div>
 
-        {/* B-Tree traversal path — dynamic from actual depth */}
-        {isIndexScan && (
-          <div>
-            <div className="text-[9px] uppercase tracking-widest text-white/25 mb-2">B-Tree traversal path</div>
-            <div className="text-[9px] text-white/25 font-mono mb-2">
-              Index: <span style={{ color: cfg.color }}>{node.indexName ?? "composite index"}</span>
-            </div>
-            <div className="space-y-1">
-              {(() => {
-                const depth = Math.max(2, Math.ceil(Math.log(Math.max(node.planRows, 10)) / Math.log(300)));
-                const levels = [
-                  { label: "Root Page", detail: `Fan-out ≈ 300 keys/page`, isLeaf: false },
-                  ...Array.from({ length: Math.max(depth - 2, 0) }, (_, i) => ({
-                    label: `Internal Node L${i + 1}`,
-                    detail: `Navigate using ${node.indexCond ? node.indexCond.split("(")[0]?.trim() : "key"} comparison`,
-                    isLeaf: false,
-                  })),
-                  { label: "Leaf Page", detail: `→ ${node.actualRows} row pointer${node.actualRows !== 1 ? "s" : ""} found`, isLeaf: true },
-                ];
-                return levels.map((lvl, i) => (
-                  <div key={i}>
-                    <div className="flex items-center gap-2">
-                      <div className="rounded px-2 py-1.5 text-[10px] font-mono flex-1"
-                        style={{
-                          background: lvl.isLeaf ? `${cfg.color}15` : "rgba(255,255,255,0.03)",
-                          border: `1px solid ${lvl.isLeaf ? cfg.color + "44" : "rgba(255,255,255,0.06)"}`,
-                          color: lvl.isLeaf ? cfg.color : "rgba(255,255,255,0.45)",
-                        }}>
-                        <div className="font-semibold">{lvl.label}</div>
-                        <div className="text-[9px] opacity-60 mt-0.5">{lvl.detail}</div>
-                      </div>
-                      <span className="text-[9px] text-white/20 font-mono flex-shrink-0">1 I/O</span>
-                    </div>
-                    {i < levels.length - 1 && (
-                      <div className="flex items-center ml-2 my-0.5">
-                        <div className="w-px h-2 bg-white/10" />
-                      </div>
-                    )}
-                  </div>
-                ));
-              })()}
-            </div>
-            <p className="text-[9px] text-white/20 mt-1.5">
-              {Math.ceil(Math.log(Math.max(node.planRows, 10)) / Math.log(300)) + 1} total disk reads → {node.actualRows} row{node.actualRows !== 1 ? "s" : ""} returned
-            </p>
-          </div>
-        )}
+        {/* B-Tree traversal path — visual tree diagram with O(log N) vs O(N) comparison */}
+        {isIndexScan && <BTreeDiagram node={node} cfg={cfg} />}
+
+        {/* Index Advisor — shown only when no index is being used */}
+        {node.nodeType === "Seq Scan" && <IndexAdvisor node={node} />}
       </div>
     </motion.div>
   );
@@ -434,7 +596,7 @@ export function BTreeExplorerPanel({ executionId, workflowId, ownerId, apiBase =
             <AlertTriangle size={14} className="text-red-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm text-red-300">{error}</p>
-              <p className="text-[11px] text-red-600 mt-1">Click "Re-run EXPLAIN" above to retry.</p>
+              <p className="text-[11px] text-red-600 mt-1">Click &quot;Re-run EXPLAIN&quot; above to retry.</p>
             </div>
           </div>
         )}

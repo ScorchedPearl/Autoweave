@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CheckCircle2, XCircle, RotateCcw, Loader2, Shield,
+  CheckCircle2, XCircle, RotateCcw, Loader2,
   ChevronDown, ChevronRight, AlertTriangle, Activity,
   RefreshCw, Database, ArrowDown
 } from "lucide-react";
@@ -34,6 +34,200 @@ const STATE_CONFIG: Record<string, { icon: React.ReactNode; label: string; textC
   COMPENSATED:  { icon: <RotateCcw size={13} />,  label: "Compensated", textColor: "#fb923c" },
   FAILED:       { icon: <XCircle size={13} />,    label: "Failed",      textColor: "#ef4444" },
 };
+
+// What each saga step state means in plain language.
+// Shown inside the expanded step detail so developers understand the saga protocol.
+const STEP_STATE_CONTEXT: Record<string, string> = {
+  PENDING:
+    "Waiting for preceding steps to commit before this local transaction can start.",
+  EXECUTING:
+    "Local transaction in progress. On success, Postgres will atomically write the result + store a compensation payload (outbox pattern). If this step commits, it becomes compensatable.",
+  COMMITTED:
+    "Local transaction committed and compensation payload persisted. This step is now enrolled in the saga — if any downstream step fails, this commit will be undone using the stored compensation transaction.",
+  COMPENSATING:
+    "Executing the pre-stored compensation transaction to undo this step's committed side effects. No distributed lock needed — eventual consistency through stored compensating writes.",
+  COMPENSATED:
+    "Compensation complete. This step's side effects have been fully reversed using its compensation payload.",
+  FAILED:
+    "Local transaction failed. The saga coordinator has triggered a compensation cascade: all previously committed steps will now be compensated in reverse order (highest step order first).",
+};
+
+// ── Saga Phase Flow: forward execution and compensation laid out side-by-side ─
+//
+// This makes the saga invariant visually obvious:
+//   - Forward phase:  step 1 → step 2 → step 3 → … (each commits locally)
+//   - Compensation:   … → undo step 3 → undo step 2 → undo step 1 (reverse order)
+//
+// Unlike 2PC (which holds locks across all participants), sagas commit eagerly
+// and use compensating transactions for rollback — this is why we can scale
+// across services without a distributed coordinator lock.
+
+function SagaPhaseFlow({ steps, sagaState }: { steps: StepStatus[]; sagaState: string }) {
+  const [open, setOpen] = useState(false);
+  const isCompensating = sagaState === "COMPENSATING" || sagaState === "COMPENSATED";
+
+  // Steps currently being compensated, shown in reverse execution order
+  const compensationSteps = [...steps]
+    .filter(s => s.stepState === "COMPENSATING" || s.stepState === "COMPENSATED")
+    .sort((a, b) => b.stepOrder - a.stepOrder);
+
+  return (
+    <div className="flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+      {/* Collapsible header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-2 px-5 py-2.5 text-left hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex items-center gap-1.5 flex-1">
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-white/30">
+            Saga Pattern
+          </span>
+          {isCompensating && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold"
+              style={{ background: "rgba(249,115,22,0.15)", color: "#fb923c" }}>
+              COMPENSATING
+            </span>
+          )}
+          {!isCompensating && sagaState === "COMPLETED" && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold"
+              style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80" }}>
+              ALL COMMITTED
+            </span>
+          )}
+        </div>
+        <span className="text-white/20 flex-shrink-0">
+          {open ? <ChevronDown size={10}/> : <ChevronRight size={10}/>}
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} className="overflow-hidden"
+          >
+            <div className="px-5 pb-4 space-y-3">
+              {/* Two-column phase diagram */}
+              <div className={`grid gap-3 ${isCompensating ? "grid-cols-2" : "grid-cols-1"}`}>
+
+                {/* Forward execution column */}
+                <div>
+                  <div className="text-[9px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5 text-emerald-400/70">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Forward Phase — local commits
+                  </div>
+                  <div className="space-y-1">
+                    {steps.map(step => {
+                      const isCommitted  = step.stepState === "COMMITTED";
+                      const isExecuting  = step.stepState === "EXECUTING";
+                      const isFailed     = step.stepState === "FAILED";
+                      const isCompensatd = step.stepState === "COMPENSATING" || step.stepState === "COMPENSATED";
+                      return (
+                        <div key={step.stepId}
+                          className="flex items-center gap-2 rounded-lg px-2.5 py-1.5"
+                          style={{
+                            background: isCommitted  ? "rgba(34,197,94,0.07)"
+                                      : isExecuting  ? "rgba(59,130,246,0.07)"
+                                      : isFailed     ? "rgba(239,68,68,0.07)"
+                                      : isCompensatd ? "rgba(249,115,22,0.07)"
+                                      : "rgba(255,255,255,0.025)",
+                            border: `1px solid ${
+                              isCommitted  ? "rgba(34,197,94,0.2)"
+                            : isExecuting  ? "rgba(59,130,246,0.2)"
+                            : isFailed     ? "rgba(239,68,68,0.2)"
+                            : isCompensatd ? "rgba(249,115,22,0.15)"
+                            : "rgba(255,255,255,0.05)"}`,
+                          }}>
+                          <span className="text-[8px] text-white/20 font-mono w-4 flex-shrink-0">{step.stepOrder}</span>
+                          <span className="text-[10px] font-medium flex-1 truncate"
+                            style={{ color: isCommitted  ? "#4ade80"
+                                         : isExecuting  ? "#60a5fa"
+                                         : isFailed     ? "#f87171"
+                                         : isCompensatd ? "#fb923c"
+                                         : "rgba(255,255,255,0.35)" }}>
+                            {step.nodeType}
+                          </span>
+                          <span className="text-[8px] flex-shrink-0"
+                            style={{ color: isCommitted  ? "rgba(74,222,128,0.5)"
+                                         : isExecuting  ? "rgba(96,165,250,0.5)"
+                                         : isFailed     ? "rgba(248,113,113,0.5)"
+                                         : isCompensatd ? "rgba(251,146,60,0.5)"
+                                         : "rgba(255,255,255,0.15)" }}>
+                            {isCommitted  ? "✓ committed"
+                           : isExecuting  ? "executing…"
+                           : isFailed     ? "✗ failed"
+                           : isCompensatd ? "↩ undone"
+                           : "pending"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Compensation column — only shown when rollback is active */}
+                {isCompensating && (
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5 text-orange-400/70">
+                      <RotateCcw size={9} className="text-orange-400" />
+                      Compensation Phase — reverse undo
+                    </div>
+                    {compensationSteps.length === 0 ? (
+                      <p className="text-[9px] text-white/20 px-2">No compensation steps recorded yet.</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {compensationSteps.map(step => {
+                          const done = step.stepState === "COMPENSATED";
+                          return (
+                            <div key={step.stepId}
+                              className="flex items-center gap-2 rounded-lg px-2.5 py-1.5"
+                              style={{
+                                background: done ? "rgba(249,115,22,0.05)" : "rgba(249,115,22,0.12)",
+                                border: `1px solid ${done ? "rgba(249,115,22,0.15)" : "rgba(249,115,22,0.3)"}`,
+                              }}>
+                              <span className="text-[9px] font-mono text-orange-400/60 flex-shrink-0">↩{step.stepOrder}</span>
+                              <span className="text-[10px] font-medium flex-1 truncate text-orange-300/70">
+                                {step.nodeType}
+                              </span>
+                              <span className="text-[8px] flex-shrink-0"
+                                style={{ color: done ? "rgba(251,146,60,0.4)" : "rgba(251,146,60,0.8)" }}>
+                                {done ? "undone" : "undoing…"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Saga vs 2PC explainer */}
+              <div className="rounded-lg px-3 py-2.5 text-[10px] text-white/30 leading-relaxed"
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                {isCompensating ? (
+                  <>
+                    <span className="text-orange-400/80 font-semibold">Why no distributed lock? </span>
+                    Each committed step persisted its compensation payload before executing. On failure, those payloads are
+                    replayed in reverse — no two-phase-commit coordinator needed, no cross-service lock held.
+                    This trades strong consistency for availability and partition tolerance.
+                  </>
+                ) : (
+                  <>
+                    <span className="text-violet-400/80 font-semibold">Saga vs 2PC: </span>
+                    Two-phase commit locks all participants until every node votes — catastrophic under partial failure.
+                    Sagas commit each step locally and store a compensation transaction pre-execution. If step K fails,
+                    steps K-1 … 1 are compensated in reverse. No global lock; each service stays autonomous.
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function tryParse(json: string | null): Record<string, unknown> | null {
   if (!json) return null;
@@ -153,6 +347,19 @@ function StepTraceEntry({
                 node: {step.nodeId}
               </div>
 
+              {/* What this state means in the saga protocol */}
+              <div className="mt-2 rounded-lg px-3 py-2 text-[10px] leading-relaxed"
+                style={{
+                  background: `${step.color}08`,
+                  border: `1px solid ${step.color}22`,
+                  color: "rgba(255,255,255,0.45)",
+                }}>
+                <span className="font-semibold mr-1" style={{ color: step.color }}>
+                  {step.stepState}:
+                </span>
+                {STEP_STATE_CONTEXT[step.stepState] ?? "Step is part of the distributed saga transaction."}
+              </div>
+
               <JsonViewer json={step.outputSnapshot} label="Step Output" color="#22c55e" />
 
               {step.hasCompensation && (
@@ -217,7 +424,7 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setData(await res.json()); setError(null); failCount.current = 0;
-    } catch (e: unknown) {
+    } catch {
       failCount.current += 1;
       if (failCount.current >= 3) {
         setError(`Connection failed after 3 attempts. Backend reachable?`);
@@ -309,6 +516,11 @@ export function SagaTransactionMonitor({ executionId, apiBase = "", pollInterval
                 : "linear-gradient(90deg,#8b5cf6,#22c55e)" }} />
           </div>
         </div>
+      )}
+
+      {/* Saga pattern explainer — shows the two execution phases side-by-side */}
+      {data && data.steps.length > 0 && (
+        <SagaPhaseFlow steps={data.steps} sagaState={data.sagaState} />
       )}
 
       <div className="flex-1 overflow-auto px-5 pb-5 relative">

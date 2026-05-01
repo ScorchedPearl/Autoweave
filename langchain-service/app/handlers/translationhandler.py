@@ -31,7 +31,7 @@ class TranslationHandler(BaseNodeHandler):
             execution_id = str(message.executionId)
             client = await self.llm_factory.get_llm_client(execution_id, 0.1, 1500)
 
-            prompt = f"Translate the following text to {target_lang}:\n\n{text}" if source_language == "auto" else f"Translate the following {source_language} text to {target_language}:\n\n{text}"
+            prompt = f"Translate the following text to {target_language}:\n\n{text}" if source_language == "auto" else f"Translate the following {source_language} text to {target_language}:\n\n{text}"
             
             def _call_llm(): return client.invoke([HumanMessage(content=prompt)]).content
             loop = asyncio.get_event_loop()

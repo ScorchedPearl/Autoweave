@@ -13,7 +13,7 @@ class LLMFactory:
     def __init__(self, redis_service):
         self.redis_service = redis_service
 
-    async def get_llm_client(self, execution_id: str, temperature: float = 0.7, max_tokens: int = 2048) -> BaseChatModel:
+    async def get_llm_client(self, execution_id: str, temperature: float = 0.7, max_tokens: int = 8000) -> BaseChatModel:
 
         openai_key = await self.redis_service.get(f"execution:{execution_id}:openai_api_key")
         if not openai_key:
