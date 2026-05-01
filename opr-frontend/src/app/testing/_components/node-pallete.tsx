@@ -23,11 +23,6 @@ const NodePalettePanel: React.FC<Props> = ({
   const offset = useRef({ x: 0, y: 0 });
 
   const {
-    selectedCategory,
-    setSelectedCategory,
-    draggedItem,
-    clickedItem,
-    categories,
     filteredTemplates,
     handleDragStart,
     handleClick,
@@ -153,4 +148,19 @@ const NodePalettePanel: React.FC<Props> = ({
   );
 };
 
-export default NodePalettePanel;
+const NodePalette: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(true);
+  const [position, setPosition] = useState({ x: 20, y: 80 });
+  if (!isOpen) return null;
+  return (
+    <NodePalettePanel
+      isOpen={isOpen}
+      onClose={() => setIsOpen(false)}
+      position={position}
+      setPosition={setPosition}
+    />
+  );
+};
+
+export { NodePalettePanel };
+export default NodePalette;

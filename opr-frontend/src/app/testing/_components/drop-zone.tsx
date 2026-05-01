@@ -1,3 +1,4 @@
+"use client";
 
 import React, { useCallback, useRef } from 'react';
 import { Workflow } from 'lucide-react';

@@ -10,6 +10,38 @@ from langchain_core.messages import HumanMessage
 
 logger = logging.getLogger(__name__)
 
+LANGUAGE_INSTRUCTIONS = {
+    "python": (
+        "Write a Python 3 solution.\n"
+        "The code must read from standard input (sys.stdin) and print to standard output.\n"
+        "Do not include any explanation , comments or markdown. Output only raw Python code."
+    ),
+    "cpp": (
+        "Write a C++17 solution.\n"
+        "Use #include directives as needed. The program must read from stdin and write to stdout.\n"
+        "Use a standard int main() entry point.\n"
+        "Do not include any explanation , comments or markdown. Output only raw C++ code."
+    ),
+    "java": (
+        "Write a Java solution.\n"
+        "The public class must be named exactly 'Main' with a public static void main(String[] args) entry point.\n"
+        "Use BufferedReader/Scanner for input and System.out for output.\n"
+        "Do not include any explanation, comments  or markdown. Output only raw Java code."
+    ),
+    "javascript": (
+        "Write a Node.js (JavaScript) solution.\n"
+        "Read all input synchronously using require('fs').readFileSync('/dev/stdin','utf8') and print to stdout using console.log.\n"
+        "Do not include any explanation , comments or markdown. Output only raw JavaScript code."
+    ),
+}
+
+CODE_FENCE_PREFIXES = {
+    "python":     ["```python", "```py", "```"],
+    "cpp":        ["```cpp", "```c++", "```c", "```"],
+    "java":       ["```java", "```"],
+    "javascript": ["```javascript", "```js", "```"],
+}
+
 class CPSolverHandler(BaseNodeHandler):
     def __init__(self, redis_service):
         super().__init__(redis_service)
@@ -27,23 +59,35 @@ class CPSolverHandler(BaseNodeHandler):
             if not problem.strip():
                 raise ValueError("No problem description provided to cp-solver")
 
+            language = node_data.get("language", context.get("language", "python")).lower()
+            if language not in LANGUAGE_INSTRUCTIONS:
+                language = "python"
+
             execution_id = str(message.executionId)
             client = await self.llm_factory.get_llm_client(execution_id, 0.0, 4096)
 
-            prompt = f"You are an elite competitive programmer.\nWrite a python 3 solution no comments to the following problem.\nThe code must read from standard input (sys.stdin) and print to standard output.\nDo not include any explanation or markdown formatting in your code block, just the raw python code.\n\nProblem Statement:\n{problem}\n"
-            
+            lang_instruction = LANGUAGE_INSTRUCTIONS[language]
+            prompt = (
+                f"You are an elite competitive programmer.\n"
+                f"{lang_instruction}\n\n"
+                f"Problem Statement:\n{problem}\n"
+            )
+
             def _call_llm():
                 return client.invoke([HumanMessage(content=prompt)]).content
 
             loop = asyncio.get_event_loop()
             code = await loop.run_in_executor(None, _call_llm)
-            
-            if code.startswith("```python"): code = code[9:]
-            elif code.startswith("```"): code = code[3:]
-            if code.endswith("```"): code = code[:-3]
-            code = code.strip()
+            code = _strip_fences(code, language)
 
-            output = {**context, "problem": problem, "code": code, "node_type": "cp-solver", "node_executed_at": datetime.now().isoformat()}
+            output = {
+                **context,
+                "problem": problem,
+                "code": code,
+                "language": language,
+                "node_type": "cp-solver",
+                "node_executed_at": datetime.now().isoformat(),
+            }
             await self._publish_completion_event(message, output, "COMPLETED", int((time.time() - start_time) * 1000))
             return output
 
@@ -59,6 +103,17 @@ class CPSolverHandler(BaseNodeHandler):
                 status=status, output=output, error=output.get("error") if status == "FAILED" else None,
                 timestamp=datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z'), processingTime=processing_time
             )
-            if hasattr(app.state, 'kafka_service'): await app.state.kafka_service.publish_completion(completion_message)
+            if hasattr(app.state, 'kafka_service'):
+                await app.state.kafka_service.publish_completion(completion_message)
         except Exception as e:
             logger.error(f"Failed to publish event: {e}")
+
+
+def _strip_fences(code: str, language: str) -> str:
+    for prefix in CODE_FENCE_PREFIXES.get(language, ["```"]):
+        if code.startswith(prefix):
+            code = code[len(prefix):]
+            break
+    if code.endswith("```"):
+        code = code[:-3]
+    return code.strip()

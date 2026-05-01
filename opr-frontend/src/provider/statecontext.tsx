@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
 import { Node } from '@xyflow/react';
 import { WorkflowNodeData, nodeTemplates } from '@/lib/mockdata';
@@ -5,6 +7,7 @@ import { useDragContext } from '@/provider/dragprovider';
 import { Tag } from '@/components/ui/tag-input';
 
 export interface EnhancedWorkflowNodeData extends WorkflowNodeData {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   configuration: Record<string, any>;
   executionState?: 'idle' | 'running' | 'success' | 'error';
   lastExecuted?: Date;
@@ -17,9 +20,11 @@ export interface EnhancedNode extends Node<EnhancedWorkflowNodeData> {
 
 export interface WorkflowExecutionData {
   nodes: Array<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     inputs: any;
     id: string;
     type: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     configuration: Record<string, any>;
     position: { x: number; y: number };
   }>;
@@ -44,6 +49,7 @@ interface WorkflowContextType {
   setEnhancedNodes: (nodes: EnhancedNode[]) => void;
   selectedNodeId: string | null;
   selectedNode: EnhancedNode | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateNodeConfiguration: (nodeId: string, configuration: Record<string, any>) => void;
   updateNodeData: (nodeId: string, updates: Partial<EnhancedWorkflowNodeData>) => void;
   
@@ -66,6 +72,7 @@ interface WorkflowContextType {
 
   isPropertiesCollapsed: boolean;
   setIsPropertiesCollapsed: (collapsed: boolean) => void;
+  clearWorkflow: () => void;
 }
 
 const WorkflowContext = createContext<WorkflowContextType | null>(null);
@@ -114,6 +121,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     : null;
 
   console.log('Selected node:', selectedNode ? { id: selectedNode.id, label: selectedNode.data.label } : 'none');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateNodeConfiguration = useCallback((nodeId: string, configuration: Record<string, any>) => {
     console.log('Updating node configuration:', { nodeId, configuration });
     
@@ -133,6 +141,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (setNodes && nodes) {
       setNodes(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         nodes.map((node: any) =>
           node.id === nodeId
             ? {
@@ -169,6 +178,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (setNodes && nodes) {
       setNodes(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         nodes.map((node: any) =>
           node.id === nodeId
             ? {
@@ -309,6 +319,21 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setReturnVariableTags([]);
   }, []);
 
+  const clearWorkflow = useCallback(() => {
+    if (setNodes) setNodes([]);
+    if (setEdges) setEdges([]);
+    setEnhancedNodes([]);
+    setReturnVariableTags([]);
+    setCurrentWorkflowId(null);
+    setWorkflowMetadata({
+      name: "Untitled Workflow",
+      description: "",
+      version: "1.0.0",
+      created: new Date(),
+      lastModified: new Date(),
+    });
+  }, [setNodes, setEdges]);
+
   const contextValue: WorkflowContextType = {
    enhancedNodes,
    setEnhancedNodes,
@@ -330,6 +355,7 @@ export const WorkflowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    setCurrentWorkflowId,
    isPropertiesCollapsed,
    setIsPropertiesCollapsed,
+   clearWorkflow,
   };
 
   return (
