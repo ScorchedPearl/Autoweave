@@ -37,7 +37,6 @@ interface Step {
   manualNext?: boolean;
 }
 
-/* ── PART 1: UI Tour (manual "Got it") ── */
 const UI_TOUR: Step[] = [
   {
     id: "welcome",
@@ -94,7 +93,6 @@ const UI_TOUR: Step[] = [
   },
 ];
 
-/* ── PART 2: Workflow build (auto-detected) ── */
 const BUILD_STEPS: Step[] = [
   {
     id: "open-palette",
@@ -198,7 +196,6 @@ const BUILD_STEPS: Step[] = [
 
 const ALL_STEPS: Step[] = [...UI_TOUR, ...BUILD_STEPS];
 
-/* ── Spotlight cutout + brightness booster ── */
 function Spotlight({ targetId, padding = 12 }: { targetId?: string; padding?: number }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
 
@@ -216,12 +213,10 @@ function Spotlight({ targetId, padding = 12 }: { targetId?: string; padding?: nu
 
   return (
     <>
-      {/* Dark veil over entire screen */}
       <div style={{ position: "fixed", inset: 0, zIndex: 9990, background: "rgba(0,0,0,0.60)", pointerEvents: "none" }} />
 
       {rect && (
         <>
-          {/* Cutout — removes the dark veil over the target */}
           <motion.div
             key={targetId}
             initial={{ opacity: 0 }}
@@ -241,7 +236,6 @@ function Spotlight({ targetId, padding = 12 }: { targetId?: string; padding?: nu
             }}
           />
 
-          {/* Brightness booster — glowing layer on top of the element so it's actually LIT */}
           <motion.div
             key={`boost-${targetId}`}
             initial={{ opacity: 0 }}
@@ -261,7 +255,6 @@ function Spotlight({ targetId, padding = 12 }: { targetId?: string; padding?: nu
             }}
           />
 
-          {/* Animated outer ring */}
           <motion.div
             style={{
               position: "fixed",
@@ -282,8 +275,6 @@ function Spotlight({ targetId, padding = 12 }: { targetId?: string; padding?: nu
     </>
   );
 }
-
-/* ── Bouncing arrow ── */
 function BounceArrow({ targetId }: { targetId?: string }) {
   const [pos, setPos] = useState<{ x: number; y: number; side: "right" | "top" } | null>(null);
 
@@ -323,7 +314,6 @@ function BounceArrow({ targetId }: { targetId?: string }) {
   );
 }
 
-/* ── Progress dots ── */
 function Dots({ current, total }: { current: number; total: number }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -341,12 +331,19 @@ function Dots({ current, total }: { current: number; total: number }) {
   );
 }
 
-/* ── Action success flash ── */
 function ActionFlash({ onDone }: { onDone: () => void }) {
+  const onDoneRef = useRef(onDone);
   useEffect(() => {
-    const t = setTimeout(onDone, 1300);
-    return () => clearTimeout(t);
+    onDoneRef.current = onDone;
   }, [onDone]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      onDoneRef.current();
+    }, 1300);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16, scale: 0.92 }}
@@ -373,7 +370,7 @@ function ActionFlash({ onDone }: { onDone: () => void }) {
   );
 }
 
-/* ── Tutorial card ── */
+
 function TutorialCard({
   step, stepIndex, total, isWaiting, onNext, onSkip,
 }: {
@@ -401,7 +398,7 @@ function TutorialCard({
         overflow: "hidden",
       }}
     >
-      {/* Rainbow top bar */}
+
       <motion.div
         style={{
           height: 3,
@@ -415,7 +412,7 @@ function TutorialCard({
       />
 
       <div style={{ padding: "20px 22px 18px" }}>
-        {/* Section badge */}
+
         <div style={{ marginBottom: 10 }}>
           <span style={{
             fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase",
@@ -428,7 +425,7 @@ function TutorialCard({
           </span>
         </div>
 
-        {/* Header */}
+        
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <motion.span
@@ -494,8 +491,6 @@ function TutorialCard({
     </motion.div>
   );
 }
-
-/* ── Context hook ── */
 function useTutorialCtx(): TCtx {
   const { isPaletteOpen, nodes, edges } = useDragContext();
   const { selectedNode, returnVariableTags } = useWorkflow();
@@ -510,19 +505,14 @@ function useTutorialCtx(): TCtx {
   };
 }
 
-/* ── Main component ── */
 export function OnboardingTutorial() {
   const { currentUser, isLoading } = useUser();
   const ctx = useTutorialCtx();
-  // *** KEY FIX: keep a ref so interval callbacks always read fresh context ***
-  const ctxRef = useRef<TCtx>(ctx);
-  useEffect(() => { ctxRef.current = ctx; });
 
   const [visible, setVisible] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
-  const advancingRef = useRef(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -540,7 +530,6 @@ export function OnboardingTutorial() {
   }, [currentUser?.email]);
 
   const advance = useCallback(() => {
-    advancingRef.current = false;
     setStepIndex((i) => {
       const next = i + 1;
       if (next >= ALL_STEPS.length) { finish(); return i; }
@@ -548,25 +537,15 @@ export function OnboardingTutorial() {
     });
   }, [finish]);
 
-  /* Poll with ctxRef so it always has fresh values — fixes the stale closure bug */
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || showFlash) return;
     const step = ALL_STEPS[stepIndex];
     if (!step.check || step.manualNext) return;
-    advancingRef.current = false;
 
-    const id = setInterval(() => {
-      if (advancingRef.current) return;
-      if (step.check!(ctxRef.current)) {
-        advancingRef.current = true;
-        clearInterval(id);
-        setShowFlash(true);
-      }
-    }, 400);
-
-    return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, stepIndex]);
+    if (step.check(ctx)) {
+      setShowFlash(true);
+    }
+  }, [visible, stepIndex, showFlash, ctx]);
 
   if (!mounted || !visible) return null;
 
@@ -598,7 +577,6 @@ export function OnboardingTutorial() {
   );
 }
 
-/* ── Replay button ── */
 export function TutorialReplayButton() {
   const { currentUser } = useUser();
   const [done, setDone] = useState(false);

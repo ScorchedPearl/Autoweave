@@ -20,7 +20,6 @@ export async function uploadPdf(file: File): Promise<PdfUploadResult> {
   return res.data;
 }
 
-// ── Workflow Builder ─────────────────────────────────────────────────────
 
 export type WorkflowProvider = "openai" | "gemini" | "claude";
 
@@ -253,19 +252,13 @@ export async function runWorkflow(
   }
 }
 
-/**
- * Polls /api/v1/saga/execution/{executionId}/status every 600 ms until the
- * saga reaches a terminal state (COMPLETED / FAILED / COMPENSATED).
- * Returns a workflowResult-shaped object built from the saga step output snapshots.
- */
+
 export async function pollForCompletion(
   executionId: string,
   timeoutMs = 120_000,
 ): Promise<Record<string, unknown>> {
   const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
   const url = `${apiBase}/api/v1/saga/execution/${executionId}/status`;
-  const token = localStorage.getItem("__Pearl_Token");
-  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
   const deadline = Date.now() + timeoutMs;
   const TERMINAL = new Set(["COMPLETED", "FAILED", "COMPENSATED", "COMPENSATING"]);
@@ -273,19 +266,26 @@ export async function pollForCompletion(
   while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, 600));
     try {
-      const res = await fetch(url, { headers });
-      if (!res.ok) continue;          // saga row not yet created — keep waiting
+      const res = await fetch(url);
+      if (!res.ok) continue;        
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const body: any = await res.json();
-      if (TERMINAL.has(body.sagaState ?? "")) {
-        // Build a variables map from all step outputSnapshots
+      
+      const state = body.sagaState || body.status || "";
+      const steps = body.steps || [];
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const allStepsDone = steps.length > 0 && steps.every((s: any) => 
+        ["COMMITTED", "FAILED", "COMPENSATED"].includes(s.stepState)
+      );
+
+      if (TERMINAL.has(state) || allStepsDone) {
         const variables: Record<string, unknown> = {};
         for (const step of body.steps ?? []) {
           if (step.outputSnapshot) {
             try {
               const snap = JSON.parse(step.outputSnapshot) as Record<string, unknown>;
               Object.assign(variables, snap);
-            } catch { /* non-JSON snapshot — skip */ }
+            } catch {}
           }
         }
         return {
@@ -297,10 +297,9 @@ export async function pollForCompletion(
         };
       }
     } catch {
-      // Network hiccup — just keep polling
+
     }
   }
 
-  // Timed out — return partial
   return { executionId, status: "TIMEOUT", variables: {} };
 }
