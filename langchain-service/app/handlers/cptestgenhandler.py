@@ -28,7 +28,7 @@ class CPTestGenHandler(BaseNodeHandler):
             if not problem.strip():
                 raise ValueError("No problem provided to cp-testgen")
 
-            # num_tests = node_data.get("num_tests", 1)
+          
             num_tests = 1
             execution_id = str(message.executionId)
             client = await self.llm_factory.get_llm_client(execution_id, 0.4, 4096)
@@ -72,7 +72,7 @@ class CPTestGenHandler(BaseNodeHandler):
                 if isinstance(data, list):
                     testcases = data
                 elif isinstance(data, dict):
-                    # handle {"testcases": [...]} or {"test_cases": [...]} or top-level array value
+                    
                     for key in ("testcases", "test_cases", "tests", "cases"):
                         if key in data and isinstance(data[key], list):
                             testcases = data[key]
