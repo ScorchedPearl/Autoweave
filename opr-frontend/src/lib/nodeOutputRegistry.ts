@@ -225,6 +225,7 @@ export const NODE_OUTPUT_REGISTRY: Record<string, NodeOutputVar[]> = {
   /* ─── Competitive Programming Nodes ──────────────────────── */
   "cp-solver": [
     { key: "code",             label: "Generated Code",   type: "string" },
+    { key: "language",         label: "Language",         type: "string" },
     { key: "problem",          label: "Problem",          type: "string" },
     { key: "node_executed_at", label: "Executed At",      type: "string" },
   ],
@@ -238,9 +239,11 @@ export const NODE_OUTPUT_REGISTRY: Record<string, NodeOutputVar[]> = {
     { key: "all_passed",       label: "All Passed",       type: "boolean"},
     { key: "passed_count",     label: "Passed Count",     type: "number" },
     { key: "total_tests",      label: "Total Tests",      type: "number" },
+    { key: "language",         label: "Language",         type: "string" },
   ],
   "cp-agent": [
     { key: "final_code",       label: "Final Code",       type: "string" },
+    { key: "language",         label: "Language",         type: "string" },
     { key: "all_passed",       label: "All Passed",       type: "boolean"},
     { key: "test_results",     label: "Test Results",     type: "array"  },
     { key: "problem",          label: "Problem",          type: "string" },

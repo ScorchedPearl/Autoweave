@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { NODE_OUTPUT_REGISTRY } from "@/lib/nodeOutputRegistry";
 import { useWorkflow } from "@/provider/statecontext";
+import { useFlowState } from "@/provider/flowstatecontext";
 
 type IconComp = React.ElementType;
 
@@ -165,10 +166,12 @@ function ReturnVarPill({ varKey, label, type, nodeStyle }: {
 }
 
 export default function WorkflowNode({
+  id,
   data,
   selected,
   dragging,
 }: {
+  id: string;
   data: CustomNode["data"];
   selected?: boolean;
   dragging?: boolean;
@@ -181,6 +184,18 @@ export default function WorkflowNode({
   const NodeIcon = getNodeIcon(data.nodeType);
   const returnVars = NODE_OUTPUT_REGISTRY[data.nodeType] ?? [];
 
+  const { activeNodeId, nodeExecutionStates } = useFlowState();
+  const execState = nodeExecutionStates[id];
+  const isRunningNow = activeNodeId === id || execState === "running";
+  const isCompleted  = execState === "completed";
+  const isFailed     = execState === "failed";
+
+  // Derive border/glow for the execution overlay
+  const execBorderColor = isRunningNow ? "#06b6d4"
+    : isCompleted          ? "#22c55e"
+    : isFailed             ? "#ef4444"
+    : null;
+
   if (!isExpanded) {
     return (
       <div
@@ -192,13 +207,42 @@ export default function WorkflowNode({
         `}
         style={{
           width: 190,
-          borderColor: selected ? style.color : style.border,
-          boxShadow: selected
+          borderColor: execBorderColor ?? (selected ? style.color : style.border),
+          boxShadow: isRunningNow
+            ? `0 0 0 1.5px #06b6d4, 0 0 24px rgba(6,182,212,0.45), 0 4px 20px rgba(0,0,0,0.5)`
+            : isCompleted
+            ? `0 0 0 1.5px #22c55e, 0 0 18px rgba(34,197,94,0.35), 0 4px 20px rgba(0,0,0,0.5)`
+            : isFailed
+            ? `0 0 0 1.5px #ef4444, 0 0 18px rgba(239,68,68,0.35), 0 4px 20px rgba(0,0,0,0.5)`
+            : selected
             ? `0 0 0 1.5px ${style.color}, 0 4px 20px rgba(0,0,0,0.5)`
             : "0 2px 12px rgba(0,0,0,0.45)",
         }}
         onClick={() => setIsExpanded(true)}
       >
+        {/* Pulsing rings while executing */}
+        {isRunningNow && (
+          <>
+            <span className="absolute inset-0 rounded-xl animate-ping opacity-20 pointer-events-none"
+              style={{ background: "rgba(6,182,212,0.3)", animationDuration: "1.1s" }} />
+            <span className="absolute inset-[-4px] rounded-[14px] animate-ping opacity-10 pointer-events-none"
+              style={{ border: "2px solid #06b6d4", animationDuration: "1.6s" }} />
+          </>
+        )}
+
+        {/* Execution state badge (top-right corner) */}
+        {(isRunningNow || isCompleted || isFailed) && (
+          <span
+            className="absolute -top-2 -right-2 text-[8px] font-bold px-1.5 py-0.5 rounded-full z-10 pointer-events-none"
+            style={{
+              background: isRunningNow ? "#06b6d4" : isCompleted ? "#22c55e" : "#ef4444",
+              color: "#000",
+            }}
+          >
+            {isRunningNow ? "⚡" : isCompleted ? "✓" : "✗"}
+          </span>
+        )}
+
         {(data.inputs ?? []).map((input, index) => (
           <Handle
             key={`in-${index}`}
@@ -230,9 +274,15 @@ export default function WorkflowNode({
           </div>
           <span
             className="text-[9px] font-semibold px-1.5 py-px rounded-full"
-            style={{ backgroundColor: `${style.color}18`, color: style.color }}
+            style={{
+              backgroundColor: isRunningNow ? "rgba(6,182,212,0.18)"
+                : isCompleted             ? "rgba(34,197,94,0.18)"
+                : isFailed               ? "rgba(239,68,68,0.18)"
+                : `${style.color}18`,
+              color: execBorderColor ?? style.color,
+            }}
           >
-            {style.badge}
+            {isRunningNow ? "Running" : isCompleted ? "Done" : isFailed ? "Failed" : style.badge}
           </span>
         </div>
 

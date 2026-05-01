@@ -7,7 +7,9 @@ export function useLoadWorkflow() {
   return async (workflowId: string) => {
     const workflow = await fetchWorkflow(workflowId);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wd = workflow.workflowData as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nodes = (wd.nodes || []).map((n: any) => ({
       id: n.id,
       type: n.type,
@@ -15,6 +17,7 @@ export function useLoadWorkflow() {
       configuration: (n.data || n.configuration || {}),
       inputs: [],
     }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const edges = (wd.edges || []).map((e: any) => ({
       id: e.id,
       source: e.source,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { HelpCircle, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, XCircle, Circle } from "lucide-react";
+import { HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 
 const faqs = [
   {
@@ -43,27 +43,6 @@ const faqs = [
     q: "How do I view execution history?",
     a: "Open any deployed workflow and click the Executions tab. Filter by date, status, or node. Click a run to see per-node input/output and timing.",
     tag: "Monitoring",
-  },
-];
-
-const checklist = [
-  {
-    title: "Workflow Won't Start",
-    color: "border-red-500/30 bg-red-500/5",
-    icon: <XCircle className="h-4 w-4 text-red-400" />,
-    items: ["Workflow is deployed — not just saved", "Trigger node has a valid configuration", "OAuth tokens haven't expired", "Webhook URL matches the POST target"],
-  },
-  {
-    title: "Node Fails Mid-Run",
-    color: "border-yellow-500/30 bg-yellow-500/5",
-    icon: <AlertTriangle className="h-4 w-4 text-yellow-400" />,
-    items: ["Read the error on the red node", "Verify upstream output format", "Test the node alone with sample data", "Check external service uptime"],
-  },
-  {
-    title: "Authentication Error",
-    color: "border-purple-500/30 bg-purple-500/5",
-    icon: <Circle className="h-4 w-4 text-purple-400" />,
-    items: ["Re-authorise integration in Settings", "Ensure correct Google account selected", "Verify all required scopes granted", "Check OAuth token expiry"],
   },
 ];
 
@@ -136,7 +115,7 @@ export default function TroubleshootingFAQ() {
       <div className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/30 rounded-lg p-6">
         <h3 className="text-xl font-semibold text-foreground mb-3">📞 Need More Help?</h3>
         <p className="text-muted-foreground mb-4">
-          If you can't find the answer to your question, here are additional resources:
+          If you can&apos;t find the answer to your question, here are additional resources:
         </p>
         <ul className="space-y-2 text-muted-foreground text-sm">
           <li>• <strong>Email Support:</strong> Contact us at support@autoweave.io</li>
@@ -151,7 +130,7 @@ export default function TroubleshootingFAQ() {
         <h3 className="text-xl font-semibold text-foreground mb-4">Common Issues Checklist</h3>
         <div className="space-y-3">
           <div className="bg-background/30 border border-border rounded p-4">
-            <p className="font-semibold text-foreground text-sm mb-2">🔴 Workflow Won't Start</p>
+            <p className="font-semibold text-foreground text-sm mb-2">🔴 Workflow Won&apos;t Start</p>
             <ul className="space-y-1 text-muted-foreground text-sm">
               <li>☐ Workflow is deployed (not just saved)</li>
               <li>☐ Trigger node is configured correctly</li>

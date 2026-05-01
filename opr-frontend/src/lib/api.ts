@@ -87,6 +87,7 @@ export interface WorkflowListItem {
   createdAt: string;
   updatedAt: string;
   version: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   workflowData: any;
 }
 
@@ -101,6 +102,7 @@ export interface PageResponse<T> {
 export async function createWorkflow(data: {
   name: string;
   description?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   workflowData: any;
 }) {
   try {
@@ -179,6 +181,7 @@ export async function deleteWorkflow(id: string) {
 
 export async function runWorkflow(
   workflowId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   workflowData: any = {},
    tags:Tag[],
   googleToken?: string
@@ -194,6 +197,7 @@ export async function runWorkflow(
     };
 
     const nodes = workflowData?.nodes || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const hasGoogleNode = nodes.some((node: any) => {
       const url: string = node?.data?.url || "";
       const explicitGoogle = node?.data?.useGoogleAuth === true;
@@ -230,7 +234,7 @@ export async function runWorkflow(
     const request={
       workflowData,
       returnVariables:tags.map(tag => tag.text),
-      waitForCompletion:true
+      waitForCompletion: false,   // async: get executionId immediately for live tracking
     }
     const response = await axios.post(
       `${API_BASE_URL}/${workflowId}/run`,
@@ -239,6 +243,7 @@ export async function runWorkflow(
     );
 
     return response.data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("❌ Error running workflow:", error);
     if (axios.isAxiosError(error)) {
@@ -246,4 +251,56 @@ export async function runWorkflow(
     }
     throw error;
   }
+}
+
+/**
+ * Polls /api/v1/saga/execution/{executionId}/status every 600 ms until the
+ * saga reaches a terminal state (COMPLETED / FAILED / COMPENSATED).
+ * Returns a workflowResult-shaped object built from the saga step output snapshots.
+ */
+export async function pollForCompletion(
+  executionId: string,
+  timeoutMs = 120_000,
+): Promise<Record<string, unknown>> {
+  const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+  const url = `${apiBase}/api/v1/saga/execution/${executionId}/status`;
+  const token = localStorage.getItem("__Pearl_Token");
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const deadline = Date.now() + timeoutMs;
+  const TERMINAL = new Set(["COMPLETED", "FAILED", "COMPENSATED", "COMPENSATING"]);
+
+  while (Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, 600));
+    try {
+      const res = await fetch(url, { headers });
+      if (!res.ok) continue;          // saga row not yet created — keep waiting
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: any = await res.json();
+      if (TERMINAL.has(body.sagaState ?? "")) {
+        // Build a variables map from all step outputSnapshots
+        const variables: Record<string, unknown> = {};
+        for (const step of body.steps ?? []) {
+          if (step.outputSnapshot) {
+            try {
+              const snap = JSON.parse(step.outputSnapshot) as Record<string, unknown>;
+              Object.assign(variables, snap);
+            } catch { /* non-JSON snapshot — skip */ }
+          }
+        }
+        return {
+          executionId,
+          status: body.sagaState,
+          variables,
+          sagaId: body.sagaId,
+          completedAt: body.completedAt,
+        };
+      }
+    } catch {
+      // Network hiccup — just keep polling
+    }
+  }
+
+  // Timed out — return partial
+  return { executionId, status: "TIMEOUT", variables: {} };
 }

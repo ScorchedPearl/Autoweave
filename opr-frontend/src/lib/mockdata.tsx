@@ -603,12 +603,12 @@ export const nodeTemplates: NodeTemplate[] = [
       id: '32',
       type: 'cp-solver',
       label: 'CP Code Solver',
-      description: 'AI code solver for competitive programming. Inputs: problem (string). Returns: code (string).',
+      description: 'AI code solver for competitive programming. Inputs: problem (string), language (python/cpp/java/javascript). Returns: code (string), language (string).',
       category: 'AI Agents',
       icon: '💻',
       defaultConfig: {
         language: 'python',
-        problem: ''
+        problem: '',
       },
       inputs: [{ id: 'input', label: 'Problem & Constraints', required: true, type: 'object' }],
       outputs: [{ id: 'output', label: 'Code', type: 'object' }]
@@ -630,14 +630,15 @@ export const nodeTemplates: NodeTemplate[] = [
     {
       id: '34',
       type: 'cp-executor',
-      label: 'Code Executor (Python)',
-      description: 'Securely executes Python code against provided test cases. Inputs: code (string), testcases (array). Returns: results (object).',
+      label: 'Code Executor',
+      description: 'Securely executes code (Python/C++/Java/JS) against test cases. Inputs: code (string), testcases (array), language (string). Returns: test_results (object), all_passed (bool).',
       category: 'AI Agents',
       icon: '⚙️',
       defaultConfig: {
+        language: 'python',
         timeout: 2,
         code: '',
-        testcases: []
+        testcases: [],
       },
       inputs: [{ id: 'input', label: 'Code & Tests', required: true, type: 'object' }],
       outputs: [{ id: 'output', label: 'Execution Results', type: 'object' }]
@@ -646,13 +647,13 @@ export const nodeTemplates: NodeTemplate[] = [
       id: '35',
       type: 'cp-agent',
       label: 'Competitive Programming Agent',
-      description: 'A ReAct loop that solves, generates tests, and executes code locally, fixing errors until all tests pass. Inputs: problem (string). Returns: final_code (string).',
+      description: 'A ReAct loop that solves, generates tests, and executes code in the chosen language, fixing errors until all tests pass. Inputs: problem (string), language (python/cpp/java/javascript). Returns: final_code (string), language (string).',
       category: 'AI Agents',
       icon: '🏆',
       defaultConfig: {
-        max_iterations: 3,
         language: 'python',
-        problem: ''
+        max_iterations: 3,
+        problem: '',
       },
       inputs: [{ id: 'input', label: 'Problem Statement', required: true, type: 'object' }],
       outputs: [{ id: 'output', label: 'Solution Code', type: 'object' }]

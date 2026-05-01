@@ -34,6 +34,7 @@ function expandDotKeys(flat: Record<string, unknown>): Record<string, unknown> {
     if (parts.length === 1) {
       result[key] = value;
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let cursor = result as any;
       for (let i = 0; i < parts.length - 1; i++) {
         if (typeof cursor[parts[i]] !== "object" || cursor[parts[i]] === null) cursor[parts[i]] = {};
@@ -128,7 +129,6 @@ function getNodeStyle(nodeType: string) {
 
 
 const baseInput = "w-full bg-[#0b0d12] border border-white/[0.1] rounded-lg px-3 py-2 text-[13px] text-white placeholder-white/25 focus:outline-none transition-all duration-150";
-const focusColor = (color: string) => `focus:border-[${color}] focus:ring-1 focus:ring-[${color}]/30`;
 
 function FieldHint({ text }: { text: string }) {
   return (
@@ -522,7 +522,9 @@ function FieldRenderer({
   upstreamVars = [],
 }: {
   schema: FieldSchema;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange: (v: any) => void;
   nodeColor: string;
   upstreamVars?: UpstreamVarGroup[];
@@ -533,7 +535,6 @@ function FieldRenderer({
     "--focus-color": nodeColor,
   } as React.CSSProperties;
 
-  const sharedInputClass = `${baseInput} focus:border-[${nodeColor}] focus:ring-1 focus:ring-[rgba(255,255,255,0.1)]`;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -671,6 +672,7 @@ function FieldRenderer({
     case "text":
     default: {
       const showPicker = schema.supportsTemplate && upstreamVars.length > 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const isPassword = schema.key.toLowerCase().includes("password") || schema.label.toLowerCase().includes("password") || schema.type === ("password" as any);
       const inputType = schema.type === "email" ? "email" : isPassword && !showPassword ? "password" : "text";
 
@@ -782,6 +784,7 @@ export const PropertiesPanel: React.FC = () => {
     });
   }, [selectedNode, edges, enhancedNodes]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [localConfig, setLocalConfig] = useState<Record<string, any>>({});
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [optionalOpen, setOptionalOpen] = useState(false);
@@ -809,6 +812,7 @@ export const PropertiesPanel: React.FC = () => {
     }
   }, [selectedNode, selectedNodeId]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = useCallback((key: string, value: any) => {
     setLocalConfig((prev) => ({ ...prev, [key]: value }));
     setHasUnsaved(true);
@@ -1067,7 +1071,7 @@ export const PropertiesPanel: React.FC = () => {
                     <Braces className="w-2.5 h-2.5" />
                     <span className="text-[9px]">{"{{var}}"}</span>
                   </span>{" "}
-                  field to inject a value from a previous node's output.
+                  field to inject a value from a previous node&apos;s output.
                 </p>
               </div>
             )}

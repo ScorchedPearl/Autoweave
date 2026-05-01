@@ -1061,8 +1061,22 @@ export const NODE_INPUT_REGISTRY: Record<string, NodeInputSchema> = {
 
   /* ─── Competitive Programming Nodes ────────────────────────── */
   "cp-solver": {
-    description: "Generates a Python solution to a competitive programming problem using an LLM.",
+    description: "Generates a solution to a competitive programming problem using an LLM. Supports Python, C++, Java, and JavaScript.",
     fields: [
+      {
+        key: "language",
+        label: "Language",
+        type: "select",
+        required: false,
+        defaultValue: "python",
+        options: [
+          { value: "python", label: "Python 3" },
+          { value: "cpp", label: "C++ 17" },
+          { value: "java", label: "Java" },
+          { value: "javascript", label: "JavaScript (Node.js)" },
+        ],
+        hint: "Programming language for the generated solution.",
+      },
       {
         key: "problem",
         label: "Problem Statement",
@@ -1105,15 +1119,30 @@ export const NODE_INPUT_REGISTRY: Record<string, NodeInputSchema> = {
   },
 
   "cp-executor": {
-    description: "Executes Python code against test cases and reports pass/fail results.",
+    description: "Executes code against test cases and reports pass/fail results. Supports Python, C++, Java, and JavaScript.",
     fields: [
       {
+        key: "language",
+        label: "Language",
+        type: "select",
+        required: false,
+        defaultValue: "python",
+        options: [
+          { value: "python", label: "Python 3" },
+          { value: "cpp", label: "C++ 17" },
+          { value: "java", label: "Java" },
+          { value: "javascript", label: "JavaScript (Node.js)" },
+        ],
+        hint: "Language of the code to execute. Can be piped from cp-solver via {{language}}.",
+        supportsTemplate: true,
+      },
+      {
         key: "code",
-        label: "Python Code",
+        label: "Source Code",
         type: "textarea",
         required: true,
-        placeholder: "{{code}} — or paste your Python solution here",
-        hint: "Python code that reads from stdin and writes to stdout. Supports {{variable}} substitution.",
+        placeholder: "{{code}} — or paste your solution here",
+        hint: "Code that reads from stdin and writes to stdout. Supports {{variable}} substitution.",
         supportsTemplate: true,
         rows: 6,
       },
@@ -1131,8 +1160,22 @@ export const NODE_INPUT_REGISTRY: Record<string, NodeInputSchema> = {
   },
 
   "cp-agent": {
-    description: "Full agentic CP pipeline: generates test cases, writes a solution, and iterates until all tests pass.",
+    description: "Full agentic CP pipeline: generates test cases, writes a solution in the chosen language, and iterates until all tests pass.",
     fields: [
+      {
+        key: "language",
+        label: "Language",
+        type: "select",
+        required: false,
+        defaultValue: "python",
+        options: [
+          { value: "python", label: "Python 3" },
+          { value: "cpp", label: "C++ 17" },
+          { value: "java", label: "Java" },
+          { value: "javascript", label: "JavaScript (Node.js)" },
+        ],
+        hint: "Programming language for the generated solution.",
+      },
       {
         key: "problem",
         label: "Problem Statement",

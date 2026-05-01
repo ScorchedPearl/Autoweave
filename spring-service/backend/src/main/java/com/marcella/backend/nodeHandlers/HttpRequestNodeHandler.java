@@ -19,13 +19,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class HttpRequestNodeHandler implements NodeHandler {
 
     private final WorkflowEventProducer eventProducer;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public HttpRequestNodeHandler(WorkflowEventProducer eventProducer) {
+        this.eventProducer = eventProducer;
+        
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = 
+            new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(15000);
+        this.restTemplate = new RestTemplate(factory);
+    }
 
     @Override
     public boolean canHandle(String nodeType) {
