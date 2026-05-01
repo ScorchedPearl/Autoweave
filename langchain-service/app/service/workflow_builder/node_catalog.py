@@ -17,12 +17,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 NodeEntry = Dict[str, Any]
 
-# (pattern, field, group)
+
 ParamRule = Tuple[str, str, int]
 
 NODE_CATALOG: Dict[str, NodeEntry] = {
 
-    # ── Triggers / Control ──────────────────────────────────────────
     "start": {
         "label": "Start",
         "category": "Triggers",
@@ -93,7 +92,6 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         "param_rules": [],
     },
 
-    # ── HTTP ────────────────────────────────────────────────────────
     "httpGet": {
         "label": "HTTP GET",
         "category": "HTTP",
@@ -151,7 +149,6 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         ],
     },
 
-    # ── Utilities ───────────────────────────────────────────────────
     "calculator": {
         "label": "Calculator",
         "category": "Utilities",
@@ -193,7 +190,6 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         ],
     },
 
-    # ── AI Nodes ────────────────────────────────────────────────────
     "text-generation": {
         "label": "Text Generation",
         "category": "AI",
@@ -394,7 +390,6 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         ],
     },
 
-    # ── Authentication ───────────────────────────────────────────────
     "openai-auth": {
         "label": "OpenAI Auth",
         "category": "Authentication",
@@ -426,7 +421,6 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         "param_rules": [],
     },
 
-    # ── Gmail ────────────────────────────────────────────────────────
     "gmailSearch": {
         "label": "Gmail Search",
         "category": "Gmail",
@@ -509,7 +503,6 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         "param_rules": [],
     },
 
-    # ── Database ─────────────────────────────────────────────────────
     "postgres-db": {
         "label": "PostgreSQL",
         "category": "Database",
@@ -577,7 +570,6 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         ],
     },
 
-    # ── ML ───────────────────────────────────────────────────────────
     "k-means": {
         "label": "K-Means Clustering",
         "category": "ML",
@@ -659,7 +651,6 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         ],
     },
 
-    # ── Competitive Programming ──────────────────────────────────────
     "cp-solver": {
         "label": "CP Solver",
         "category": "Competitive Programming",
@@ -713,7 +704,6 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         ],
     },
 
-    # ── Security ─────────────────────────────────────────────────────
     "ssl-cert-checker": {
         "label": "SSL Certificate Checker",
         "category": "Security",
@@ -832,5 +822,4 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
     },
 }
 
-# Ordered list of all node type keys (used to seed Qdrant in a stable order)
 ALL_NODE_TYPES: List[str] = list(NODE_CATALOG.keys())

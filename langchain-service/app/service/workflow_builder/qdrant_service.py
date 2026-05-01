@@ -27,7 +27,7 @@ from app.service.workflow_builder.node_catalog import NODE_CATALOG, ALL_NODE_TYP
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "nodes"
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"   # 80 MB, 384 dims, runs fully locally
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"  
 VECTOR_SIZE = 384
 
 
@@ -38,9 +38,7 @@ class QdrantNodeService:
         self._client: Optional[QdrantClient] = None
         self._model: Optional[SentenceTransformer] = None
 
-    # ──────────────────────────────────────────────────────────────────
-    # Lifecycle
-    # ──────────────────────────────────────────────────────────────────
+    
 
     def initialize(self) -> None:
         """Load the embedding model and seed Qdrant. Call once at startup."""
@@ -54,10 +52,7 @@ class QdrantNodeService:
         self._seed_nodes()
         logger.info("QdrantNodeService ready (%d nodes indexed)", len(ALL_NODE_TYPES))
 
-    # ──────────────────────────────────────────────────────────────────
-    # Internal helpers
-    # ──────────────────────────────────────────────────────────────────
-
+   
     def _ensure_collection(self) -> None:
         existing = {c.name for c in self._client.get_collections().collections}
         if COLLECTION_NAME not in existing:
@@ -82,10 +77,7 @@ class QdrantNodeService:
         self._client.upsert(collection_name=COLLECTION_NAME, points=points)
         logger.debug("Upserted %d node embeddings into Qdrant", len(points))
 
-    # ──────────────────────────────────────────────────────────────────
-    # Public API
-    # ──────────────────────────────────────────────────────────────────
-
+  
     def find_node_type(self, query: str, top_k: int = 1) -> List[str]:
         """
         Return the top_k most semantically similar node types for a query string.
@@ -95,7 +87,6 @@ class QdrantNodeService:
             raise RuntimeError("QdrantNodeService not initialised — call initialize() first")
 
         vector = self._model.encode([query], show_progress_bar=False)[0].tolist()
-        # qdrant-client >= 1.7 uses query_points(); < 1.7 used search()
         try:
             response = self._client.query_points(
                 collection_name=COLLECTION_NAME,
@@ -104,7 +95,7 @@ class QdrantNodeService:
             )
             hits = response.points
         except AttributeError:
-            hits = self._client.search(  # type: ignore[attr-defined]
+            hits = self._client.search(  
                 collection_name=COLLECTION_NAME,
                 query_vector=vector,
                 limit=top_k,

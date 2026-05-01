@@ -22,7 +22,7 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
-# ── Shared system prompt ───────────────────────────────────────────────
+
 _SYSTEM_PROMPT = """\
 You are a workflow intent parser. The user will describe a multi-step workflow in plain English.
 
@@ -42,7 +42,7 @@ Example output: ["scan ports 80,443 on example.com", "check ssl cert example.com
 """
 
 
-# ── Public entry point ─────────────────────────────────────────────────
+
 
 def extract_intents(prompt: str, api_key: str, provider: str = "openai") -> List[str]:
     """
@@ -81,7 +81,6 @@ def extract_intents(prompt: str, api_key: str, provider: str = "openai") -> List
         return [prompt.strip()]
 
 
-# ── Provider implementations ───────────────────────────────────────────
 
 def _call_openai(prompt: str, api_key: str) -> str:
     import openai
@@ -101,8 +100,7 @@ def _call_openai(prompt: str, api_key: str) -> str:
 def _call_gemini(prompt: str, api_key: str) -> str:
     import google.generativeai as genai
     genai.configure(api_key=api_key)
-    # Combine system prompt + user prompt — avoids system_instruction API issues
-    # Use gemini-2.0-flash (stable, available in v1 API)
+   
     model = genai.GenerativeModel("gemini-2.5-flash")
     resp = model.generate_content(
         f"{_SYSTEM_PROMPT}\n\nUser request: {prompt}",
@@ -123,10 +121,8 @@ def _call_claude(prompt: str, api_key: str) -> str:
     return msg.content[0].text.strip()
 
 
-# ── Response parser ────────────────────────────────────────────────────
 
 def _parse_response(raw: str, original_prompt: str) -> List[str]:
-    # Strip accidental markdown code fences
     cleaned = re.sub(r"^```[a-z]*\n?", "", raw.strip())
     cleaned = re.sub(r"\n?```$", "", cleaned.strip())
 
