@@ -20,7 +20,7 @@ class NodeExecutionMessage(BaseModel):
     nodeData: Dict[str, Any] = Field(alias="node_data")
     context: Dict[str, Any] = Field(default_factory=dict)
     dependencies: List[str] = Field(default_factory=list)
-    timestamp: str  # ISO-8601 
+    timestamp: str  
     priority: Priority = Priority.NORMAL
     
 
@@ -42,7 +42,7 @@ class NodeExecutionMessage(BaseModel):
     @validator('timestamp', pre=True)
     def parse_timestamp(cls, v):
         if isinstance(v, dict):
-            # Handle Java Instant format if needed
+           
             return v.get('isoString', str(v))
         return str(v)
 
@@ -55,11 +55,11 @@ class NodeCompletionMessage(BaseModel):
     status: str 
     output: Dict[str, Any] = Field(default_factory=dict)
     error: Optional[str] = None
-    timestamp: str  # ISO-8601
+    timestamp: str 
     processingTime: int
     service: str = "fastapi"
 
-    model_config = ConfigDict(populate_by_name=True)  # for Pydantic v2
+    model_config = ConfigDict(populate_by_name=True)  
 
 
 
