@@ -38,7 +38,11 @@ class QdrantNodeService:
         self._client: Optional[QdrantClient] = None
         self._model: Optional[SentenceTransformer] = None
 
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
 
     def initialize(self) -> None:
         """Load the embedding model and seed Qdrant. Call once at startup."""
@@ -52,7 +56,11 @@ class QdrantNodeService:
         self._seed_nodes()
         logger.info("QdrantNodeService ready (%d nodes indexed)", len(ALL_NODE_TYPES))
 
+<<<<<<< HEAD
+   
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     def _ensure_collection(self) -> None:
         existing = {c.name for c in self._client.get_collections().collections}
         if COLLECTION_NAME not in existing:
@@ -77,7 +85,11 @@ class QdrantNodeService:
         self._client.upsert(collection_name=COLLECTION_NAME, points=points)
         logger.debug("Upserted %d node embeddings into Qdrant", len(points))
 
+<<<<<<< HEAD
+  
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     def find_node_type(self, query: str, top_k: int = 1) -> List[str]:
         """
         Return the top_k most semantically similar node types for a query string.
@@ -87,7 +99,10 @@ class QdrantNodeService:
             raise RuntimeError("QdrantNodeService not initialised — call initialize() first")
 
         vector = self._model.encode([query], show_progress_bar=False)[0].tolist()
+<<<<<<< HEAD
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
         try:
             response = self._client.query_points(
                 collection_name=COLLECTION_NAME,
@@ -96,8 +111,12 @@ class QdrantNodeService:
             )
             hits = response.points
         except AttributeError:
+<<<<<<< HEAD
+            hits = self._client.search(  
+=======
             hits = self._client.search(  # type: ignore[attr-defined]
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
                 collection_name=COLLECTION_NAME,
                 query_vector=vector,
                 limit=top_k,

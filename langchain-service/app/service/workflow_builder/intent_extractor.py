@@ -43,6 +43,10 @@ Example output: ["scan ports 80,443 on example.com", "check ssl cert example.com
 
 
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
 def extract_intents(prompt: str, api_key: str, provider: str = "openai") -> List[str]:
     """
     Dispatch to the correct provider and return an ordered list of intent phrases.
@@ -99,7 +103,11 @@ def _call_openai(prompt: str, api_key: str) -> str:
 def _call_gemini(prompt: str, api_key: str) -> str:
     import google.generativeai as genai
     genai.configure(api_key=api_key)
+<<<<<<< HEAD
+   
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     model = genai.GenerativeModel("gemini-2.5-flash")
     resp = model.generate_content(
         f"{_SYSTEM_PROMPT}\n\nUser request: {prompt}",
@@ -121,9 +129,13 @@ def _call_claude(prompt: str, api_key: str) -> str:
 
 
 
+<<<<<<< HEAD
+def _parse_response(raw: str, original_prompt: str) -> List[str]:
+=======
 
 def _parse_response(raw: str, original_prompt: str) -> List[str]:
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     cleaned = re.sub(r"^```[a-z]*\n?", "", raw.strip())
     cleaned = re.sub(r"\n?```$", "", cleaned.strip())
 

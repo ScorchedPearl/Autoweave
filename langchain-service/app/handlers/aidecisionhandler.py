@@ -65,7 +65,10 @@ class AIDecisionHandler(BaseNodeHandler):
                 decision = str(parsed.get("decision", ""))
                 confidence = float(parsed.get("confidence", 1.0))
             except Exception:
+<<<<<<< HEAD
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
                 decision_match = re.search(r'"decision"\s*:\s*"([^"]*)"', raw)
                 conf_match = re.search(r'"confidence"\s*:\s*([0-9.]+)', raw)
                 if decision_match:
@@ -78,14 +81,20 @@ class AIDecisionHandler(BaseNodeHandler):
                     confidence = 1.0
 
             matched = False
+<<<<<<< HEAD
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
             for opt in options:
                 if str(opt).strip().lower() == str(decision).strip().lower():
                     decision = str(opt).strip()
                     matched = True
                     break
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
             if not matched:
                 sorted_options = sorted(options, key=lambda x: len(str(x)), reverse=True)
                 for opt in sorted_options:

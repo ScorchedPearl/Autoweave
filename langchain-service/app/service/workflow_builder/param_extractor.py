@@ -34,7 +34,10 @@ def extract_params(intent_phrase: str, node_type: str) -> Dict[str, Any]:
         if match:
             try:
                 value = match.group(group)
+<<<<<<< HEAD
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
                 value = _normalise(field, value)
                 overrides[field] = value
                 logger.debug(
@@ -48,7 +51,10 @@ def extract_params(intent_phrase: str, node_type: str) -> Dict[str, Any]:
 
 
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
 _LANG_MAP = {
     "fr": "french", "es": "spanish", "de": "german", "ja": "japanese",
     "zh": "chinese", "ar": "arabic", "ko": "korean", "ru": "russian",
@@ -91,7 +97,10 @@ def _normalise(field: str, value: str) -> Any:
     if field == "algorithm" and v in _ALGORITHM_MAP:
         return _ALGORITHM_MAP[v]
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     if field in (
         "max_tokens", "max_results", "n_clusters", "num_tests",
         "max_iterations", "max_attempts", "maxResults", "duration",
