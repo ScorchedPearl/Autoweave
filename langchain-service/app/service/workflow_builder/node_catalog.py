@@ -22,10 +22,7 @@ ParamRule = Tuple[str, str, int]
 
 NODE_CATALOG: Dict[str, NodeEntry] = {
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     "start": {
         "label": "Start",
         "category": "Triggers",
@@ -96,10 +93,7 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         "param_rules": [],
     },
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     "httpGet": {
         "label": "HTTP GET",
         "category": "HTTP",
@@ -157,10 +151,7 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
         ],
     },
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     "calculator": {
         "label": "Calculator",
         "category": "Utilities",
@@ -581,10 +572,7 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
             (r"\b(postgres|postgresql|mysql|mongo|mongodb)\b", "db_type", 1),
         ],
     },
-<<<<<<< HEAD
 
-=======
->>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     "k-means": {
         "label": "K-Means Clustering",
         "category": "ML",
@@ -665,10 +653,7 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
             (r"(\d+(?:\.\d+)?)\s*contamination", "contamination", 1),
         ],
     },
-<<<<<<< HEAD
 
-=======
->>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
     "cp-solver": {
         "label": "CP Solver",
         "category": "Competitive Programming",
@@ -840,8 +825,5 @@ NODE_CATALOG: Dict[str, NodeEntry] = {
     },
 }
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 85cd4ff4d7c00e6d53e8d13a8b3432427c1c87fb
 ALL_NODE_TYPES: List[str] = list(NODE_CATALOG.keys())
