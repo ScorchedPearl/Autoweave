@@ -219,4 +219,81 @@ docker compose up --build
 
 ---
 
+## Project Structure
+
+```
+autoweave/
+├── opr-frontend/          # Next.js 15 web app
+│   └── src/
+│       ├── app/
+│       │   ├── flow/      # Workflow canvas page
+│       │   ├── auth/      # Login / register
+│       │   └── ...        # Dashboard, docs, blog
+│       └── components/    # Shared UI components
+│
+├── spring-service/
+│   └── backend/           # Spring Boot REST API
+│       └── src/main/java/
+│
+├── langchain-service/
+│   └── app/
+│       ├── handlers/      # One handler per node type (30+)
+│       ├── service/       # LLM factory, Kafka consumer, workflow builder
+│       ├── core/          # Config, Kafka, Redis
+│       └── models/        # Pydantic request/response schemas
+│
+├── docs/                  # Architecture & UML diagrams
+└── docker-compose.yml     # Full stack orchestration
+```
+
+---
+
+## Documentation
+
+Full architecture and design docs live in [docs/](docs/):
+
+| Document | Contents |
+|---|---|
+| [System Architecture](docs/01_SYSTEM_ARCHITECTURE.md) | High-level overview, service interactions |
+| [Data Flow Diagram](docs/02_DATA_FLOW_DIAGRAM.md) | End-to-end request lifecycle |
+| [ER Schema](docs/03_ER_SCHEMA_DIAGRAMS.md) | Database entity relationships |
+| [Use Case UML](docs/04_UML_USE_CASE.md) | Actor/system interactions |
+| [Class Diagrams](docs/05_UML_CLASS_DIAGRAMS.md) | Domain model |
+| [Sequence Diagrams](docs/06_UML_SEQUENCE_DIAGRAMS.md) | Workflow execution flow |
+| [Activity Diagrams](docs/07_UML_ACTIVITY_DIAGRAMS.md) | Node processing logic |
+
+---
+
+## Contributing
+
+Contributions are welcome. Please open an issue first to discuss any significant change.
+
+```bash
+# Fork, then clone your fork
+git clone https://github.com/your-username/autoweave.git
+
+# Create a feature branch
+git checkout -b feat/my-new-node
+
+# Make changes, then run the stack
+docker compose up --build
+
+# Open a PR against main
+```
+
+Code style follows the conventions already present in each service (ESLint/Prettier for TypeScript, Black for Python, Google Java Format for Spring Boot).
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+  Built with precision and a lot of coffee.
+</div>
+
+
 
