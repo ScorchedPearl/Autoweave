@@ -67,3 +67,51 @@ Whether you need to summarize documents, run ML models, scan for security vulner
 - **Kafka-backed** — async, reliable job dispatch and result delivery
 
 ---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Browser (Next.js 15)                   │
+│         Visual Canvas  ·  Dashboard  ·  Auth UI             │
+└──────────────────────────┬──────────────────────────────────┘
+                           │  HTTPS / WebSocket
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│               Spring Boot  (port 2706)                      │
+│   REST API  ·  JWT Auth  ·  OTP  ·  Google OAuth            │
+│   Workflow CRUD  ·  Execution Management  ·  Kafka Producer  │
+└───────────┬──────────────────────────┬──────────────────────┘
+            │ Kafka (topic: jobs)       │ JDBC
+            ▼                          ▼
+┌────────────────────────┐   ┌──────────────────────┐
+│  FastAPI  (port 8000)  │   │   PostgreSQL           │
+│  LangChain  ·  AI      │   │   Workflows, Runs,     │
+│  30+ Node Handlers     │   │   Users, Logs          │
+│  Kafka Consumer        │   └──────────────────────┘
+│  Result → WebSocket    │
+└───────────┬────────────┘
+            │
+   ┌────────┼────────┐
+   ▼        ▼        ▼
+Redis    Qdrant    External
+Cache    Vector    LLM APIs
+         Store    (OpenAI /
+                  Gemini /
+                  Anthropic)
+```
+
+### Service Breakdown
+
+| Service | Tech | Port | Responsibility |
+|---|---|---|---|
+| **Frontend** | Next.js 15, React Flow, Tailwind | `3000` | Canvas UI, auth, dashboard |
+| **Backend** | Spring Boot 3, JPA | `2706` | REST API, auth, workflow CRUD |
+| **AI Service** | Python, FastAPI, LangChain | `8000` | Node execution, LLM calls |
+| **PostgreSQL** | Postgres 16 | `5432` | Persistent storage |
+| **Redis** | Redis 7 | `6379` | Sessions, caching, rate limiting |
+| **Kafka** | Apache Kafka 3.7 (KRaft) | `9092` | Async job queue |
+| **Qdrant** | Qdrant latest | `6333` | Vector similarity search |
+
+---
+
