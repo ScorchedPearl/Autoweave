@@ -115,3 +115,108 @@ Cache    Vector    LLM APIs
 
 ---
 
+## Getting Started
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) + Docker Compose v2
+- Git
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-org/autoweave.git
+cd autoweave
+```
+
+### 2. Configure environment variables
+
+Create a `.env` file in the project root (copy from `.env.example` if present) and fill in the required values:
+
+```env
+# LLM Provider Keys (at least one required)
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=...
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Google OAuth (for Gmail / Calendar integrations)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# JWT
+JWT_SECRET=your-very-long-random-secret
+
+# Mail (OTP delivery)
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your@email.com
+MAIL_PASSWORD=your-app-password
+```
+
+### 3. Launch all services
+
+```bash
+docker compose up --build
+```
+
+> First run downloads ~2 GB of images and compiles the Spring Boot jar. Subsequent starts are much faster.
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Spring API | http://localhost:2706 |
+| FastAPI / Swagger | http://localhost:8000/docs |
+| Qdrant Dashboard | http://localhost:6333/dashboard |
+
+### 4. Create your first workflow
+
+1. Register at `http://localhost:3000/auth` (OTP sent to your email)
+2. Open the **Flow** editor from the sidebar
+3. Drag a **Text Generation** node onto the canvas
+4. Connect it to an **Output** node and click **Run**
+5. Watch results stream back in real time
+
+---
+
+## Tech Stack
+
+<details>
+<summary><strong>Frontend</strong></summary>
+
+- **Next.js 15** — App Router, Server Components
+- **@xyflow/react** (React Flow) — canvas and edge rendering
+- **Tailwind CSS v4** — utility-first styling
+- **Framer Motion** — animations
+- **Radix UI** — accessible component primitives
+- **React Hook Form** — form state management
+- **jwt-decode** + **@react-oauth/google** — auth helpers
+
+</details>
+
+<details>
+<summary><strong>Backend (Spring Boot)</strong></summary>
+
+- **Spring Boot 3** + **Spring Security** — REST API and JWT guard
+- **Spring Data JPA** + **PostgreSQL** — relational persistence
+- **Spring Data Redis** — session cache
+- **Spring Kafka** — job producer
+- **JavaMailSender** — OTP emails
+
+</details>
+
+<details>
+<summary><strong>AI Service (Python / FastAPI)</strong></summary>
+
+- **FastAPI** — async HTTP and WebSocket server
+- **LangChain** — LLM orchestration and chain building
+- **OpenAI / Google Gemini / Anthropic** — pluggable LLM backends
+- **sentence-transformers** — local embedding models
+- **scikit-learn** — ML node implementations
+- **Qdrant** — vector store for RAG pipelines
+- **kafka-python** — Kafka consumer
+
+</details>
+
+---
+
+
